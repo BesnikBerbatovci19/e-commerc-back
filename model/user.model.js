@@ -5,7 +5,7 @@ function getAllUser() {
     const query = 'SELECT * FROM user';
     return new Promise((resolve, reject) => {
         connection.query(query, (error, results) => {
-            if(error) {
+            if (error) {
                 reject(error);
             } else {
                 resolve(results)
@@ -19,7 +19,7 @@ function findUserById(id) {
 
     return new Promise((resolve, reject) => {
         connection.query(query, [id], (error, results) => {
-            if(error) {
+            if (error) {
                 reject(error);
             } else {
                 resolve(results[0])
@@ -33,8 +33,8 @@ function createUser(name, surname, email, phone, address, password, role) {
     const query = 'INSERT INTO user (name, surname, email,  phone, address, password, role) VALUES (?, ?, ?, ?, ?, ?, ?)';
     const hashPassword = bcrypt.hashSync(password, 10);
     return new Promise((resolve, reject) => {
-        connection.query(query, [name, surname,  email, phone, address, hashPassword, role], (error, results) => {
-            if(error) {
+        connection.query(query, [name, surname, email, phone, address, hashPassword, role], (error, results) => {
+            if (error) {
                 reject(error);
             } else {
                 resolve(results)
@@ -49,7 +49,7 @@ function findByEmail(email) {
 
     return new Promise((resolve, reject) => {
         connection.query(query, [email], (error, results) => {
-            if(error) {
+            if (error) {
                 reject(error);
             } else {
                 resolve(results)
@@ -59,26 +59,33 @@ function findByEmail(email) {
 }
 
 function updateUser(name, surname, email, phone, address, password, id) {
-    const query = `
+    let query = `
     UPDATE user 
     SET 
         name = COALESCE(?, name),
         surname = COALESCE(?, surname),
         email = COALESCE(?, email),
         phone = COALESCE(?, phone),
-        address = COALESCE(?, address),
-        password = COALESCE(?, password)
-    WHERE id = ?;`;
+        address = COALESCE(?, address)`;
 
-        return new Promise((resolve, reject) => {
-            connection.query(query, [name, surname, email, phone, address, password, id], (error, results) => {
-                if (error) {
-                    reject(error);
-                } else {
-                    resolve(results);
-                }
-            });
+    const params = [name, surname, email, phone, address];
+
+    if (password) {
+        const hashPassword = bcrypt.hashSync(password, 10);
+        query += ', password = ?';
+        params.push(hashPassword);
+    }
+    query += ' WHERE id = ?;';
+
+    return new Promise((resolve, reject) => {
+        connection.query(query, [...params, id], (error, results) => {
+            if (error) {
+                reject(error); 
+            } else {
+                resolve(results); 
+            }
         });
+    });
 }
 
 

@@ -1,5 +1,5 @@
 const connection = require('../config/database');
-
+const { generateSlugSubCategoryByName } = require('../utils/generateSlug');
 
 function getAllSubCategory() {
     const query = 'SELECT * FROM subcategory';
@@ -31,10 +31,11 @@ function getSubCategoryById(id) {
 }
 
 function crateSubCategory(cat_id, name, description) {
-    const query = 'INSERT INTO subcategory(category_id, name, description) VALUES (?, ?, ?)';
+    const query = 'INSERT INTO subcategory(category_id, name, description, slug) VALUES (?, ?, ?, ?)';
+    const slug = generateSlugSubCategoryByName(name);
 
     return new Promise((resolve, reject) => {
-        connection.query(query, [cat_id, name, description], (error, results) => {
+        connection.query(query, [cat_id, name, description, slug], (error, results) => {
             if (error) {
                 reject(error);
             } else {
