@@ -38,8 +38,9 @@ exports.getProductById = async function (req, res) {
 
 
 exports.create = async function (req, res) {
+    const paths = req.files.map((file, index) => ({ id: index, path: file.path }));
     try {
-        ProductModel.createProduct(req.body)
+        ProductModel.createProduct(req.body, JSON.stringify(paths))
             .then(() => {
                 res.json({
                     success: true,
@@ -58,7 +59,23 @@ exports.create = async function (req, res) {
 
 
 exports.update = async function (req, res) {
-
+    const { id } = req.params;
+    try {
+        ProductModel.updateUser(id, req.body)
+            .then(() => {
+                res.json({
+                    success: true,
+                    message: "Product updated successfull"
+                })
+            })
+            .catch((error) => {
+                console.log(error)
+                res.status(500).json({ message: "Error updated product" })
+            })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, msg: "Interna Server Error" })
+    }
 }
 
 
@@ -75,6 +92,26 @@ exports.delete = async function (req, res) {
             .catch((error) => {
                 console.log(error)
                 res.status(500).json({ message: "Error deleting product" })
+            })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, msg: "Interna Server Error" })
+    }
+}
+
+exports.deletePhoto = async function (req, res) {
+    try {
+        const { id, idPhoto } = req.params;
+        ProductModel.deletePhoto(id, idPhoto)
+            .then(() => {
+                res.json({
+                    success: true,
+                    message: "Photo deleted successfull"
+                })
+            })
+            .catch((error) => {
+                console.log(error)
+                res.status(500).json({ message: "Error deleting photo" })
             })
     } catch (error) {
         console.log(error);

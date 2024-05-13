@@ -29,12 +29,12 @@ function getProductById(id) {
     })
 }
 
-function createProduct(data) {
-    const query = "INSERT INTO product(subcategory_id, subcategory_slug, slug, name, description, price, status, inStock) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+function createProduct(data, path) {
+    const query = "INSERT INTO product(subcategory_id, subcategory_slug, slug, name, description, price, status, inStock, path, warranty, discount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     const slug = generateSlugSubCategoryByName(data.name);
 
     return new Promise((resolve, reject) => {
-        connection.query(query, [data.subcategory_id, data.subcategory_slug, slug, data.name, data.description, data.price, data.status, data.instock], (error, results) => {
+        connection.query(query, [data.subcategory_id, data.subcategory_slug, slug, data.name, data.description, data.price, data.status, data.instock, path, data.warranty, data.discount], (error, results) => {
             if (error) {
                 reject(error);
             } else {
@@ -46,7 +46,7 @@ function createProduct(data) {
 }
 
 function deleteProduct(id) {
-    const query = "DELETE FROM products WHERE id = ?";
+    const query = "DELETE FROM product WHERE id = ?";
 
     return new Promise((resolve, reject) => {
         connection.query(query, [id], (error, results) => {
