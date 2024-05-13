@@ -17,14 +17,14 @@ function getAllSubCategory() {
 
 
 function getSubCategoryById(id) {
-    const query = 'SELECT * FROM subcategory WHERE id = ?';
+    const query = 'SELECT * FROM subcategory WHERE category_id = ?';
 
     return new Promise((resolve, reject) => {
         connection.query(query, [id], (error, results) => {
             if (error) {
                 reject(error);
             } else {
-                resolve(results[0])
+                resolve(results)
             }
         })
     })
