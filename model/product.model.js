@@ -1,4 +1,5 @@
 const connection = require('../config/database');
+const fs = require('fs');
 
 const { generateSlugSubCategoryByName } = require('../utils/generateSlug');
 function getAllProduct() {
@@ -58,9 +59,31 @@ function deleteProduct(id) {
         });
     });
 }
+
+function deletePhoto(id, idPhoto){
+    const fetchQuery = "SELECT path FROM product WHERE id = ?";
+    const updateQuery = "UPDATE product SET path = ? WHERE id = ?";
+
+    return new Promise((resolve, reject) => {
+        connection.query(fetchQuery, [id], (error, results) => {
+            let remove = JSON.parse(results[0].path).find((item) => item.id == idPhoto);
+            fs.unlink(remove.path, (err) => { if (err) throw err;})
+            let photo = JSON.parse(results[0].path).filter((item) => item.id != idPhoto);
+            connection.query(updateQuery, [JSON.stringify(photo), id], (error, results) => {
+                if (error) {
+                    return reject(error);
+                }
+                resolve(results.affectedRows > 0);
+            });
+        });
+    });
+}
+
+
 module.exports = {
     getAllProduct,
     getProductById,
     createProduct,
-    deleteProduct
+    deleteProduct,
+    deletePhoto
 }
