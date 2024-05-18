@@ -1,5 +1,5 @@
 const ProductModel = require('../model/product.model');
-
+const { v4: uuidv4 } = require('uuid')
 
 
 exports.getProduct = async function (req, res) {
@@ -38,7 +38,7 @@ exports.getProductById = async function (req, res) {
 
 
 exports.create = async function (req, res) {
-    const paths = req.files.map((file, index) => ({ id: index, path: file.path }));
+    const paths = req.files.map((file) => ({ id: uuidv4(), path: file.path }));
     try {
         ProductModel.createProduct(req.body, JSON.stringify(paths))
             .then(() => {
@@ -61,7 +61,7 @@ exports.create = async function (req, res) {
 exports.update = async function (req, res) {
     const { id } = req.params;
     try {
-        ProductModel.updateUser(id, req.body)
+        ProductModel.updateProduct(id, req.body, [])
             .then(() => {
                 res.json({
                     success: true,
