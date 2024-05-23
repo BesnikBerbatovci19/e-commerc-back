@@ -58,7 +58,7 @@ function findByEmail(email) {
     })
 }
 
-function updateUser(name, surname, email, phone, address, password, id) {
+function updateUser(name, surname, email, phone, address, password, role, id) {
     let query = `
     UPDATE user 
     SET 
@@ -66,9 +66,10 @@ function updateUser(name, surname, email, phone, address, password, id) {
         surname = COALESCE(?, surname),
         email = COALESCE(?, email),
         phone = COALESCE(?, phone),
-        address = COALESCE(?, address)`;
+        address = COALESCE(?, address),
+        role = COALESCE(?, role)`;
 
-    const params = [name, surname, email, phone, address];
+    const params = [name, surname, email, phone, address, role];
 
     if (password) {
         const hashPassword = bcrypt.hashSync(password, 10);

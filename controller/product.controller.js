@@ -60,8 +60,11 @@ exports.create = async function (req, res) {
 
 exports.update = async function (req, res) {
     const { id } = req.params;
+  
+    const paths = req.files != undefined ? req.files.length > 0 ? req.files.map((file) => ({ id: uuidv4(), path: file.path })) : null : null;
+
     try {
-        ProductModel.updateProduct(id, req.body, [])
+        ProductModel.updateProduct(id, req.body, paths)
             .then(() => {
                 res.json({
                     success: true,
