@@ -79,7 +79,8 @@ function deletePhoto(id, idPhoto) {
     });
 }
 
-function updateProduct(id, data, photo) {
+function updateProduct(id, data, paths) {
+    const fetchPathsQuery = `SELECT path FROM product WHERE id = ?`;
     const updateQuery = `
     UPDATE product 
     SET 
@@ -88,21 +89,38 @@ function updateProduct(id, data, photo) {
         status = COALESCE(?, status),
         inStock = COALESCE(?, inStock),
         warranty = COALESCE(?, warranty),
-        discount = COALESCE(?, discount)
+        discount = COALESCE(?, discount),
+        path = COALESCE(?, path)
     WHERE id = ?
-`;
+    `;
 
     return new Promise((resolve, reject) => {
-        connection.query(updateQuery, [data.name, data.price, data.status, data.inStock, data.warranty, data.discount, id], (error, results) => {
+        // Fetch the current paths first
+        connection.query(fetchPathsQuery, [id], (error, results) => {
+            const joinPath = paths != null ? results[0].path != null ? JSON.parse(results[0].path).concat(paths) : paths : null;
             if (error) {
-                reject(error);
-            } else {
-                resolve(results.affectedRows > 0);
+                return reject(error);
             }
+            connection.query(updateQuery, [
+                data.name,
+                data.price,
+                data.status,
+                data.inStock,
+                data.warranty,
+                data.discount,
+                joinPath == null ? null :JSON.stringify(joinPath),
+                id
+            ], (error, results) => {
+                if (error) {
+                    return reject(error);
+                } else {
+                    return resolve(results.affectedRows > 0);    
+                }
+                
+            });
         });
     });
 }
-
 module.exports = {
     getAllProduct,
     getProductById,

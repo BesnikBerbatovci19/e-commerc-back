@@ -145,8 +145,8 @@ exports.delete = async function (req, res) {
 exports.update = async function (req, res) {
     try {
         const { id } = req.params;
-        const { name, surname, email, phone, address, password } = req.body;
-        UserModel.updateUser(name, surname, email, phone, address, password, id)
+        const { name, surname, email, phone, address, password, role } = req.body;
+        UserModel.updateUser(name, surname, email, phone, address, password, role, id)
             .then(() => {
                 res.json({
                     success: true,
