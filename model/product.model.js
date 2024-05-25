@@ -30,12 +30,12 @@ function getProductById(id) {
     })
 }
 
-function createProduct(data, path) {
-    const query = "INSERT INTO product(subcategory_id, subcategory_slug, slug, name, description, price, status, inStock, path, warranty, discount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+function createProduct(id, data, path) {
+    const query = "INSERT INTO product(user_id, subcategory_id, subcategory_slug, slug, name, description, price, status, inStock, path, warranty, discount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     const slug = generateSlugSubCategoryByName(data.name);
 
     return new Promise((resolve, reject) => {
-        connection.query(query, [data.subcategory_id, data.subcategory_slug, slug, data.name, data.description, data.price, data.status, data.instock, path, data.warranty, data.discount], (error, results) => {
+        connection.query(query, [id, data.subcategory_id, data.subcategory_slug, slug, data.name, data.description, data.price, data.status, data.instock, path, data.warranty, data.discount], (error, results) => {
             if (error) {
                 reject(error);
             } else {
@@ -108,18 +108,32 @@ function updateProduct(id, data, paths) {
                 data.inStock,
                 data.warranty,
                 data.discount,
-                joinPath == null ? null :JSON.stringify(joinPath),
+                joinPath == null ? null : JSON.stringify(joinPath),
                 id
             ], (error, results) => {
                 if (error) {
                     return reject(error);
                 } else {
-                    return resolve(results.affectedRows > 0);    
+                    return resolve(results.affectedRows > 0);
                 }
-                
+
             });
         });
     });
+}
+
+function getProductUser(userId) {
+    const query = "SELECT * FROM product WHERE user_id = ?";
+
+    return new Promise((resolve, reject) => {
+        connection.query(query, [userId], (error, results) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(results)
+            }
+        })
+    })
 }
 module.exports = {
     getAllProduct,
@@ -127,5 +141,6 @@ module.exports = {
     createProduct,
     deleteProduct,
     deletePhoto,
-    updateProduct
+    updateProduct,
+    getProductUser
 }
