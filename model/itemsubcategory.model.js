@@ -1,8 +1,9 @@
 const connection = require('../config/database');
 const { generateSlugSubCategoryByName } = require('../utils/generateSlug');
 
-function getAllSubCategory() {
-    const query = 'SELECT * FROM subcategory';
+
+function getAllItemSubCategory() {
+    const query = "SELECT * FROM item_subcategory";
 
     return new Promise((resolve, reject) => {
         connection.query(query, (error, results) => {
@@ -15,9 +16,8 @@ function getAllSubCategory() {
     })
 }
 
-
-function getSubCategoryById(id) {
-    const query = 'SELECT * FROM subcategory WHERE category_id = ?';
+function getItemSubCategoryById(id) {
+    const query = 'SELECT * FROM item_subcategory WHERE subcategory_id = ?';
 
     return new Promise((resolve, reject) => {
         connection.query(query, [id], (error, results) => {
@@ -30,14 +30,16 @@ function getSubCategoryById(id) {
     })
 }
 
-function crateSubCategory(cat_id, name, description, path) {
-    const query = 'INSERT INTO subcategory(category_id, name, description, slug, path) VALUES (?, ?, ?, ?, ?)';
+
+function createItemSubCategory(subcat_id, name, description) {
+    const query = "INSERT INTO item_subcategory(subcategory_id, name, description, slug) VALUES (?, ?, ?, ?)";
+
     const slug = generateSlugSubCategoryByName(name);
 
     return new Promise((resolve, reject) => {
-        connection.query(query, [cat_id, name, description, slug, path], (error, results) => {
-            if (error) {
-                reject(error);
+        connection.query(query, [subcat_id, name, description, slug], (error, results) => {
+            if(error) {
+                reject(error)
             } else {
                 resolve(results[0])
             }
@@ -45,30 +47,9 @@ function crateSubCategory(cat_id, name, description, path) {
     })
 }
 
-function updateSubCategory(name, description, id, cat_id) {
-    const query = `
-    UPDATE subcategory 
-    SET 
-        name = COALESCE(?, name),
-        description = COALESCE(?, description)
-        WHERE id = ? AND category_id = ?;`
-
-    return new Promise((resolve, reject) => {
-        connection.query(query, [name, description, id, cat_id], (error, results) => {
-            if (error) {
-                reject(error);
-            } else {
-                resolve(results);
-            }
-        });
-    });
-}
-
-
-
-function deleteSubCategory(id) {
-    const selectQuery = "SELECT * FROM subcategory WHERE id = ?";
-    const deleteQuery = "DELETE FROM subcategory WHERE id = ?";
+function deleteItemSubCategory(id) {
+    const selectQuery = "SELECT * FROM item_subcategory WHERE id = ?";
+    const deleteQuery = "DELETE FROM item_subcategory WHERE id = ?";
 
     return new Promise((resolve, reject) => {
         connection.query(selectQuery, [id], (selectError, selectResults) => {
@@ -77,7 +58,7 @@ function deleteSubCategory(id) {
             }
 
             if (selectResults.length === 0) {
-                return reject(new Error("Subcategory not found"));
+                return reject(new Error("ItemSubCategory not found"));
             }
 
             const subCategoryData = selectResults[0];
@@ -93,11 +74,9 @@ function deleteSubCategory(id) {
     });
 }
 
-
 module.exports = {
-    getAllSubCategory,
-    getSubCategoryById,
-    crateSubCategory,
-    updateSubCategory,
-    deleteSubCategory
+    getAllItemSubCategory,
+    getItemSubCategoryById,
+    createItemSubCategory,
+    deleteItemSubCategory
 }

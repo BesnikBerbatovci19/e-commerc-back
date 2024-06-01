@@ -31,11 +31,11 @@ function getProductById(id) {
 }
 
 function createProduct(id, data, path) {
-    const query = "INSERT INTO product(user_id, subcategory_id, subcategory_slug, slug, name, description, price, status, inStock, path, warranty, discount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    const query = "INSERT INTO product(user_id, subcategory_id, subcategory_slug, slug, name, description, price, status, inStock, path, warranty, discount, barcode, manufacturernumber) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     const slug = generateSlugSubCategoryByName(data.name);
 
     return new Promise((resolve, reject) => {
-        connection.query(query, [id, data.subcategory_id, data.subcategory_slug, slug, data.name, data.description, data.price, data.status, data.instock, path, data.warranty, data.discount], (error, results) => {
+        connection.query(query, [id, data.subcategory_id, data.subcategory_slug, slug, data.name, data.description, data.price, data.status, data.instock, path, data.warranty, data.discount, data.barcode, data.manufacturernumber,], (error, results) => {
             if (error) {
                 reject(error);
             } else {
@@ -90,8 +90,11 @@ function updateProduct(id, data, paths) {
         inStock = COALESCE(?, inStock),
         warranty = COALESCE(?, warranty),
         discount = COALESCE(?, discount),
+        description = COALESCE(?, description),
+        barcode = COALESCE(?, barcode),
+        manufacturernumber = COALESCE(?, manufacturernumber),
         path = COALESCE(?, path)
-    WHERE id = ?
+        WHERE id = ?
     `;
 
     return new Promise((resolve, reject) => {
@@ -108,6 +111,9 @@ function updateProduct(id, data, paths) {
                 data.inStock,
                 data.warranty,
                 data.discount,
+                data.description,
+                data.barcode,
+                data.manufacturernumber,
                 joinPath == null ? null : JSON.stringify(joinPath),
                 id
             ], (error, results) => {

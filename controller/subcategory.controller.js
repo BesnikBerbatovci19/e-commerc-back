@@ -1,5 +1,6 @@
 const SubCategoryModel = require('../model/subcategory.model');
 const { validationSubCategoryInput } = require('../validation/category/category');
+const fs = require('fs');
 
 exports.getSubCategory = async function (req, res) {
     try {
@@ -35,15 +36,18 @@ exports.getSubCategoryById = async function (req, res) {
 }
 
 exports.createSubCategory = async function (req, res) {
+    const filePath = req.file ? req.file.path : null;
     try {
         const { category_id, name, description } = req.body;
         const { errors, isValid } = validationSubCategoryInput(req.body);
-        
-        if (!isValid) {
-            return res.status(404).json(errors);
-        }
 
-        SubCategoryModel.crateSubCategory(category_id, name, description)
+        if (!isValid) {
+            if (filePath) {
+                fs.unlinkSync(filePath);
+            }
+            return res.status(400).json(errors);
+        }
+        SubCategoryModel.crateSubCategory(category_id, name, description, filePath)
             .then(() => {
                 res.json({
                     success: true,
@@ -87,7 +91,8 @@ exports.delete = async function (req, res) {
     const { id } = req.params;
     try {
         SubCategoryModel.deleteSubCategory(id)
-            .then(() => {
+            .then((deleted) => {
+                fs.unlinkSync(deleted.path)
                 res.json({
                     success: true,
                     message: "SubCategory deleted successfull"
