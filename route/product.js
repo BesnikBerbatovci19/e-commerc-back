@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const { authMiddleware, checkRole } = require('../middleware/authMiddleware');
-const uploadMiddleware = require('../middleware/uploadMiddleware');
+const uploadMiddleware = require('../middleware/upload/uploadMiddleware');
 const ProducController = require('../controller/product.controller');
 
 router.get('/getProduct', authMiddleware, checkRole('admin'), ProducController.getProduct);
