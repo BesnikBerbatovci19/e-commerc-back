@@ -19,7 +19,8 @@ function getAllOrder() {
     product.path,
     orders.quantity,
     orders.total_price,
-    orders.status
+    orders.status,
+    orders.created_at
     FROM 
         orders
     JOIN 
@@ -83,9 +84,23 @@ function deleteOrder(id) {
 }
 
 
+function updatedStatus(id, status) {
+    const query = 'UPDATE orders SET status = ? WHERE id = ?';
+    return new Promise((resolve, reject) => {
+        connection.query(query, [status, id], (error, results) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(results.affectedRows > 0);
+            }
+        });
+    });
+}
+
 module.exports = {
     getAllOrder,
     getOrderById,
     deleteOrder,
-    createOrder
+    createOrder,
+    updatedStatus
 }

@@ -39,3 +39,24 @@ exports.createOrder = async function (req, res) {
         res.status(500).json({ success: false, msg: "Interna Server Error" })
     }
 }
+
+exports.updateStatus = async function (req, res) {
+    try {
+        const { id }  = req.params;
+        const { status } = req.body;
+        OrderModel.updatedStatus(id, status)
+                .then(() => {
+                    res.json({
+                        status: true,
+                        message: "Status updated successfull"
+                    })
+                })
+                .catch((error) => {
+                    console.log(error)
+                    res.status(500).json({ message: "Error updated status"})
+                })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, msg: "Interna Server Error" })
+    }
+}
