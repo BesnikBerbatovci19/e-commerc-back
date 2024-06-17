@@ -103,3 +103,20 @@ exports.update = async function(req, res) {
         res.status(500).json({ success: false, msg: "Interna update Error" })
     }
 }
+
+
+exports.getCategoryWithSubCategory = async function (req, res) {
+    try {
+        CategoryModel.getCategoryWithSubCategory()
+                    .then((response) => {
+                        res.json(response)
+                    })
+                    .catch((error) => {
+                        console.log(error)
+                        res.status(500).json({ message: "Error get categories" })
+                    })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, msg: "Interna update Error" })
+    }
+}

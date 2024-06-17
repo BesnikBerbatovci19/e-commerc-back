@@ -12,4 +12,6 @@ router.post('/createCategory', authMiddleware, checkRole('admin'), CategoryContr
 router.delete('/delete/:id', authMiddleware, checkRole('admin'), CategoryController.delete);
 router.put('/update/:id', authMiddleware, checkRole('admin'), CategoryController.update);
 
+
+router.get('/getCategoryWithSubCategory', CategoryController.getCategoryWithSubCategory);
 module.exports = router;

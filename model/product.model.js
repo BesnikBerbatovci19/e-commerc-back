@@ -2,6 +2,8 @@ const connection = require('../config/database');
 const fs = require('fs');
 
 const { generateSlugSubCategoryByName } = require('../utils/generateSlug');
+const { resolve } = require('path');
+
 function getAllProduct() {
     const query = 'SELECT * FROM product'
     return new Promise((resolve, reject) => {
@@ -141,6 +143,60 @@ function getProductUser(userId) {
         })
     })
 }
+
+function createProductByCsv(data) {
+    const query = "INSERT INTO product(user_id, subcategory_id, subcategory_slug, slug, name, description, price, status, inStock, path, warranty, discount, barcode, manufacturernumber) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    let subcategory_id = null;
+    let subcategory_slug = null;
+    if (data.category == "Home & Garden > Household Appliance Accessories") {
+        subcategory_id = 9;
+        subcategory_slug = "kopësht";
+    }
+
+
+    return new Promise((resolve, reject) => {
+        connection.query(query, [null, subcategory_id, subcategory_slug, data.search_name, data.name, JSON.stringify(data.description), data.price, 1, 1, data.image, data.warranty, null, data.SKU, data.SKU], (error, results) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(results[0])
+            }
+        })
+    })
+}
+
+
+function searchQuery(data) {
+    let query = `SELECT * FROM product WHERE subcategory_slug = ?`; 
+    const queryParams = [data.subcategoryslug];
+
+    if (data.inStock !== undefined) {
+        query += ` AND inStock = ?`; 
+        queryParams.push(data.inStock);
+    }
+
+    if (data.discount === true) {
+        query += ` AND discount IS NOT NULL`;
+    }
+
+
+    if(data.status === true) {
+        query += ` AND status = 1`;
+    }
+
+    return new Promise((resolve, reject) => {
+        connection.query(query, queryParams, (error, results) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(results);
+            }
+        });
+    });
+}
+
+
+ 
 module.exports = {
     getAllProduct,
     getProductById,
@@ -148,5 +204,7 @@ module.exports = {
     deleteProduct,
     deletePhoto,
     updateProduct,
-    getProductUser
+    getProductUser,
+    createProductByCsv,
+    searchQuery
 }

@@ -79,10 +79,70 @@ function deleteCategory(id) {
     });
 }
 
+
+function getCategoryWithSubCategory() {
+    const query = `
+
+    SELECT 
+    JSON_ARRAYAGG(
+        JSON_OBJECT(
+            'id', c.id,
+            'name', c.name,
+            'description', c.description,
+            'subcategories', (
+                SELECT JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'id', sc.id,
+                        'category_id', sc.category_id,
+                        'name', sc.name,
+                        'description', sc.description,
+                        'slug', sc.slug,
+                        'path', sc.path,
+                        'created_at', sc.created_at,
+                        'updated_at', sc.updated_at,
+                        'item_subcategories', (
+                            SELECT JSON_ARRAYAGG(
+                                JSON_OBJECT(
+                                    'id', isc.id,
+                                    'subcategory_id', isc.subcategory_id,
+                                    'name', isc.name,
+                                    'description', isc.description,
+                                    'slug', isc.slug,
+                                    'created_at', isc.created_at,
+                                    'updated_at', isc.updated_at
+                                )
+                            )
+                            FROM item_subcategory isc
+                            WHERE isc.subcategory_id = sc.id
+                        )
+                    )
+                )
+                FROM subcategory sc
+                WHERE sc.category_id = c.id
+            )
+        )
+    ) AS categories
+FROM 
+    category c;
+
+    `
+
+
+    return new Promise((resolve, reject) => {
+        connection.query(query, (error, results) => {
+            if (error) {
+                reject(error);
+            } else { 
+                resolve(JSON.parse(results[0].categories));
+            }
+        });
+    });
+}
 module.exports = {
     getAllCategory,
     getCategoryById,
     crateCategory,
     updateCategory,
-    deleteCategory
+    deleteCategory,
+    getCategoryWithSubCategory
 }

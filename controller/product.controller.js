@@ -1,6 +1,7 @@
 const ProductModel = require('../model/product.model');
 const { v4: uuidv4 } = require('uuid')
-
+const fs = require('fs');
+const csv = require('csv-parser');
 
 exports.getProduct = async function (req, res) {
     try {
@@ -154,6 +155,37 @@ exports.getProductUser = async function (req, res) {
     try {
         const user_id = req.user.id;
         ProductModel.getProductUser(user_id)
+            .then((products) => {
+                res.json(products)
+            })
+            .catch((error) => {
+                console.error("Error get products :", error)
+                res.status(500).json({ message: "Error get products" })
+            })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, msg: "Interna Server Error" })
+    }
+}
+
+
+exports.getProductByCSV = async function (req, res) {
+    fs.createReadStream('./file/products.csv')
+        .pipe(csv())
+        .on('data', (data) => {
+            ProductModel.createProductByCsv(data)
+        })
+        .on('end', () => {
+            // You can now work with the data
+        });
+}
+
+
+
+exports.getSearchProduct = async function (req, res) {
+    try {
+        const queryParams = req.body;
+        ProductModel.searchQuery(queryParams)
             .then((products) => {
                 res.json(products)
             })
