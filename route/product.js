@@ -17,4 +17,8 @@ router.post('/createProductUser', authMiddleware, checkRole('user'), uploadMiddl
 router.get('/getUserProduct', authMiddleware, checkRole('user'), ProducController.getProductUser);
 
 
+router.post("/getProductByCSV", ProducController.getProductByCSV);
+router.get('/getSearchProduct', ProducController.getSearchProduct)
+
+
 module.exports = router
