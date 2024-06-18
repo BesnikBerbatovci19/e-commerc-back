@@ -182,6 +182,13 @@ function searchQuery(data) {
 
     if(data.status === true) {
         query += ` AND status = 1`;
+    } 
+
+
+    if (data.st === 1) {
+        query += ` AND created_at >= NOW() - INTERVAL 30 DAY`;
+    } else if (data.st === 1.4) {
+        query += ` AND created_at >= NOW() - INTERVAL 90 DAY`;
     }
 
     return new Promise((resolve, reject) => {
