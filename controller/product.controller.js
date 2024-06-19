@@ -173,7 +173,8 @@ exports.getProductByCSV = async function (req, res) {
     fs.createReadStream('./file/products.csv')
         .pipe(csv())
         .on('data', (data) => {
-            ProductModel.createProductByCsv(data)
+            
+            // ProductModel.createProductByCsv(data)
         })
         .on('end', () => {
             // You can now work with the data

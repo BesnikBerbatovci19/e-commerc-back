@@ -2,7 +2,6 @@ const connection = require('../config/database');
 const fs = require('fs');
 
 const { generateSlugSubCategoryByName } = require('../utils/generateSlug');
-const { resolve } = require('path');
 
 function getAllProduct() {
     const query = 'SELECT * FROM product'
@@ -33,11 +32,11 @@ function getProductById(id) {
 }
 
 function createProduct(id, data, path) {
-    const query = "INSERT INTO product(user_id, subcategory_id, subcategory_slug, slug, name, description, price, status, inStock, path, warranty, discount, barcode, manufacturernumber) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    const query = "INSERT INTO product(user_id, subcategory_id, subcategory_slug, slug, name, description, price, status, inStock, path, warranty, discount, barcode, SKU) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     const slug = generateSlugSubCategoryByName(data.name);
 
     return new Promise((resolve, reject) => {
-        connection.query(query, [id, data.subcategory_id, data.subcategory_slug, slug, data.name, data.description, data.price, data.status, data.instock, path, data.warranty, data.discount, data.barcode, data.manufacturernumber,], (error, results) => {
+        connection.query(query, [id, data.subcategory_id, data.subcategory_slug, slug, data.name, data.description, data.price, data.status, data.instock, path, data.warranty, data.discount, data.barcode, data.SKU,], (error, results) => {
             if (error) {
                 reject(error);
             } else {
@@ -94,7 +93,7 @@ function updateProduct(id, data, paths) {
         discount = COALESCE(?, discount),
         description = COALESCE(?, description),
         barcode = COALESCE(?, barcode),
-        manufacturernumber = COALESCE(?, manufacturernumber),
+        SKU = COALESCE(?, SKU),
         path = COALESCE(?, path)
         WHERE id = ?
     `;
@@ -110,12 +109,12 @@ function updateProduct(id, data, paths) {
                 data.name,
                 data.price,
                 data.status,
-                data.inStock,
+                data.instock,
                 data.warranty,
                 data.discount,
                 data.description,
                 data.barcode,
-                data.manufacturernumber,
+                data.SKU,
                 joinPath == null ? null : JSON.stringify(joinPath),
                 id
             ], (error, results) => {
