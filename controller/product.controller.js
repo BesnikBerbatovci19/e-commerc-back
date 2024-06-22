@@ -66,16 +66,16 @@ exports.update = async function (req, res) {
 
     try {
         ProductModel.updateProduct(id, req.body, paths)
-            .then(() => {
-                res.json({
-                    success: true,
-                    message: "Product updated successfull"
-                })
-            })
-            .catch((error) => {
-                console.log(error)
-                res.status(500).json({ message: "Error updated product" })
-            })
+            // .then(() => {
+            //     res.json({
+            //         success: true,
+            //         message: "Product updated successfull"
+            //     })
+            // })
+            // .catch((error) => {
+            //     console.log(error)
+            //     res.status(500).json({ message: "Error updated product" })
+            // })
     } catch (error) {
         console.log(error);
         res.status(500).json({ success: false, msg: "Interna Server Error" })
@@ -173,7 +173,7 @@ exports.getProductByCSV = async function (req, res) {
     fs.createReadStream('./file/products.csv')
         .pipe(csv())
         .on('data', (data) => {
-            
+
             // ProductModel.createProductByCsv(data)
         })
         .on('end', () => {
@@ -185,15 +185,19 @@ exports.getProductByCSV = async function (req, res) {
 
 exports.getSearchProduct = async function (req, res) {
     try {
+        const { slug, page, limit } = req.params
         const queryParams = req.body;
-        ProductModel.searchQuery(queryParams)
-            .then((products) => {
-                res.json(products)
-            })
-            .catch((error) => {
-                console.error("Error get products :", error)
-                res.status(500).json({ message: "Error get products" })
-            })
+
+        const pageNumber = page ? parseInt(page, 10) : 1;
+        const limitNumber = limit ? parseInt(limit, 10) : 10;
+        const offset = (pageNumber - 1) * limitNumber;
+
+        try {
+            const results = await ProductModel.searchQuery(slug, queryParams, limitNumber, offset);
+            res.json(results);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        } 
     } catch (error) {
         console.log(error);
         res.status(500).json({ success: false, msg: "Interna Server Error" })

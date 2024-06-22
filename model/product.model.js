@@ -94,39 +94,42 @@ function updateProduct(id, data, paths) {
         description = COALESCE(?, description),
         barcode = COALESCE(?, barcode),
         SKU = COALESCE(?, SKU),
-        path = COALESCE(?, path)
+        path = COALESCE(?, path),
+        details =  COALESCE(?, details)
         WHERE id = ?
     `;
 
-    return new Promise((resolve, reject) => {
-        // Fetch the current paths first
-        connection.query(fetchPathsQuery, [id], (error, results) => {
-            const joinPath = paths != null ? results[0].path != null ? JSON.parse(results[0].path).concat(paths) : paths : null;
-            if (error) {
-                return reject(error);
-            }
-            connection.query(updateQuery, [
-                data.name,
-                data.price,
-                data.status,
-                data.instock,
-                data.warranty,
-                data.discount,
-                data.description,
-                data.barcode,
-                data.SKU,
-                joinPath == null ? null : JSON.stringify(joinPath),
-                id
-            ], (error, results) => {
-                if (error) {
-                    return reject(error);
-                } else {
-                    return resolve(results.affectedRows > 0);
-                }
+    console.log(data.details)
 
-            });
-        });
-    });
+    // return new Promise((resolve, reject) => {
+    //     connection.query(fetchPathsQuery, [id], (error, results) => {
+    //         const joinPath = paths != null ? results[0].path != null ? JSON.parse(results[0].path).concat(paths) : paths : null;
+    //         if (error) {
+    //             return reject(error);
+    //         }
+    //         connection.query(updateQuery, [
+    //             data.name,
+    //             data.price,
+    //             data.status,
+    //             data.instock,
+    //             data.warranty,
+    //             data.discount,
+    //             data.description,
+    //             data.barcode,
+    //             data.SKU,
+    //             joinPath == null ? null : JSON.stringify(joinPath),
+    //             req.details,
+    //             id
+    //         ], (error, results) => {
+    //             if (error) {
+    //                 return reject(error);
+    //             } else {
+    //                 return resolve(results.affectedRows > 0);
+    //             }
+
+    //         });
+    //     });
+    // });
 }
 
 function getProductUser(userId) {
@@ -165,9 +168,9 @@ function createProductByCsv(data) {
 }
 
 
-function searchQuery(data) {
+function searchQuery(slug, data, limit, offset) {
     let query = `SELECT * FROM product WHERE subcategory_slug = ?`; 
-    const queryParams = [data.subcategoryslug];
+    const queryParams = [slug];
 
     if (data.inStock !== undefined) {
         query += ` AND inStock = ?`; 
@@ -178,17 +181,30 @@ function searchQuery(data) {
         query += ` AND discount IS NOT NULL`;
     }
 
-
-    if(data.status === true) {
+    if (data.status === true) {
         query += ` AND status = 1`;
     } 
-
 
     if (data.st === 1) {
         query += ` AND created_at >= NOW() - INTERVAL 30 DAY`;
     } else if (data.st === 1.4) {
         query += ` AND created_at >= NOW() - INTERVAL 90 DAY`;
     }
+
+    if (data.priceFrom !== undefined && data.priceTo !== undefined) {
+        query += ` AND price BETWEEN ? AND ?`;
+        queryParams.push(data.priceFrom, data.priceTo);
+    } else if (data.priceFrom !== undefined) {
+        query += ` AND price >= ?`;
+        queryParams.push(data.priceFrom);
+    } else if (data.priceTo !== undefined) {
+        query += ` AND price <= ?`;
+        queryParams.push(data.priceTo);
+    }
+
+    // Add pagination
+    query += ` LIMIT ? OFFSET ?`;
+    queryParams.push(limit, offset);
 
     return new Promise((resolve, reject) => {
         connection.query(query, queryParams, (error, results) => {
@@ -202,7 +218,6 @@ function searchQuery(data) {
 }
 
 
- 
 module.exports = {
     getAllProduct,
     getProductById,
