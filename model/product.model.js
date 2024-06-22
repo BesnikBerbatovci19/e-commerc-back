@@ -32,11 +32,11 @@ function getProductById(id) {
 }
 
 function createProduct(id, data, path) {
-    const query = "INSERT INTO product(user_id, subcategory_id, subcategory_slug, slug, name, description, price, status, inStock, path, warranty, discount, barcode, SKU) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    const query = "INSERT INTO product(user_id, subcategory_id, subcategory_slug, slug, name, description, price, status, inStock, path, warranty, discount, barcode, SKU, manufacter_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     const slug = generateSlugSubCategoryByName(data.name);
 
     return new Promise((resolve, reject) => {
-        connection.query(query, [id, data.subcategory_id, data.subcategory_slug, slug, data.name, data.description, data.price, data.status, data.instock, path, data.warranty, data.discount, data.barcode, data.SKU,], (error, results) => {
+        connection.query(query, [id, data.subcategory_id, data.subcategory_slug, slug, data.name, data.description, data.price, data.status, data.instock, path, data.warranty, data.discount, data.barcode, data.SKU, data.manufacter_id], (error, results) => {
             if (error) {
                 reject(error);
             } else {
@@ -86,6 +86,9 @@ function updateProduct(id, data, paths) {
     UPDATE product 
     SET 
         name = COALESCE(?, name),
+        subcategory_id = COALESCE(?, subcategory_id),
+        subcategory_slug = COALESCE(?, subcategory_slug),
+        manufacter_id = COALESCE(?, manufacter_id),
         price = COALESCE(?, price),
         status = COALESCE(?, status),
         inStock = COALESCE(?, inStock),
@@ -94,12 +97,13 @@ function updateProduct(id, data, paths) {
         description = COALESCE(?, description),
         barcode = COALESCE(?, barcode),
         SKU = COALESCE(?, SKU),
-        path = COALESCE(?, path)
+        path = COALESCE(?, path),
+        details =  COALESCE(?, details)
         WHERE id = ?
     `;
 
+
     return new Promise((resolve, reject) => {
-        // Fetch the current paths first
         connection.query(fetchPathsQuery, [id], (error, results) => {
             const joinPath = paths != null ? results[0].path != null ? JSON.parse(results[0].path).concat(paths) : paths : null;
             if (error) {
@@ -107,6 +111,9 @@ function updateProduct(id, data, paths) {
             }
             connection.query(updateQuery, [
                 data.name,
+                data.subcategory_id,
+                data.subcategory_slug,
+                data.manufacter_id,
                 data.price,
                 data.status,
                 data.instock,
@@ -116,6 +123,7 @@ function updateProduct(id, data, paths) {
                 data.barcode,
                 data.SKU,
                 joinPath == null ? null : JSON.stringify(joinPath),
+                data.details,
                 id
             ], (error, results) => {
                 if (error) {
@@ -165,9 +173,9 @@ function createProductByCsv(data) {
 }
 
 
-function searchQuery(data) {
+function searchQuery(slug, data, limit, offset) {
     let query = `SELECT * FROM product WHERE subcategory_slug = ?`; 
-    const queryParams = [data.subcategoryslug];
+    const queryParams = [slug];
 
     if (data.inStock !== undefined) {
         query += ` AND inStock = ?`; 
@@ -178,17 +186,30 @@ function searchQuery(data) {
         query += ` AND discount IS NOT NULL`;
     }
 
-
-    if(data.status === true) {
+    if (data.status === true) {
         query += ` AND status = 1`;
     } 
-
 
     if (data.st === 1) {
         query += ` AND created_at >= NOW() - INTERVAL 30 DAY`;
     } else if (data.st === 1.4) {
         query += ` AND created_at >= NOW() - INTERVAL 90 DAY`;
     }
+
+    if (data.priceFrom !== undefined && data.priceTo !== undefined) {
+        query += ` AND price BETWEEN ? AND ?`;
+        queryParams.push(data.priceFrom, data.priceTo);
+    } else if (data.priceFrom !== undefined) {
+        query += ` AND price >= ?`;
+        queryParams.push(data.priceFrom);
+    } else if (data.priceTo !== undefined) {
+        query += ` AND price <= ?`;
+        queryParams.push(data.priceTo);
+    }
+
+    // Add pagination
+    query += ` LIMIT ? OFFSET ?`;
+    queryParams.push(limit, offset);
 
     return new Promise((resolve, reject) => {
         connection.query(query, queryParams, (error, results) => {
@@ -202,7 +223,39 @@ function searchQuery(data) {
 }
 
 
- 
+function setDealsOfTheWeek(id, value) {
+    const query = `
+    UPDATE product 
+    SET 
+        is_deal_of_week = COALESCE(?, is_deal_of_week)
+        WHERE id = ?
+    `;
+
+    return new Promise((resolve, reject) => {
+        connection.query(query, [value, id], (error, results) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(results);
+            }
+        });
+    });
+}
+
+function getDealsOfTheWeek() {
+    const query = "SELECT * FROM product WHERE is_deal_of_week = 1";
+
+    return new Promise((resolve, reject) => {
+        connection.query(query, (error, results) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(results);
+            }
+        });
+    });
+}
+
 module.exports = {
     getAllProduct,
     getProductById,
@@ -212,5 +265,7 @@ module.exports = {
     updateProduct,
     getProductUser,
     createProductByCsv,
-    searchQuery
+    searchQuery,
+    setDealsOfTheWeek,
+    getDealsOfTheWeek
 }

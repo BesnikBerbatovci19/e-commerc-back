@@ -14,7 +14,7 @@ const subcategoryRoute = require('./route/subcategory');
 const productRoute = require('./route/product');
 const orderRoute = require('./route/order');
 const itemSubCategory = require('./route/itemsubcategory');
-
+const manufacter = require('./route/manufacter');
 // middleware
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
@@ -48,6 +48,7 @@ app.use('/api/subcategory', subcategoryRoute);
 app.use('/api/product', productRoute);
 app.use('/api/order', orderRoute);
 app.use('/api/itemsubcategory', itemSubCategory);
+app.use('/api/manufacter', manufacter);
 
 const port = process.env.PORT || 5000;
 
