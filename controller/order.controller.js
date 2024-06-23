@@ -23,17 +23,20 @@ exports.getOrderById = async function (req, res) {
 exports.createOrder = async function (req, res) {
     try {
         const { id } = req.user;
-        OrderModel.createOrder(id, req.body)
+
+        const orderPromises = req.body.map(order => OrderModel.createOrder(id, order));
+
+        Promise.all(orderPromises)
             .then(() => {
                 res.json({
                     success: true,
-                    message: "Order created successfull"
-                })
+                    message: "Orders created successfully",
+                });
             })
             .catch((error) => {
-                console.log(error)
-                res.status(500).json({ message: "Error created order" })
-            })
+                console.log(error);
+                res.status(500).json({ message: "Error creating orders" });
+            });
     } catch (error) {
         console.log(error);
         res.status(500).json({ success: false, msg: "Interna Server Error" })
@@ -42,19 +45,40 @@ exports.createOrder = async function (req, res) {
 
 exports.updateStatus = async function (req, res) {
     try {
-        const { id }  = req.params;
+        const { id } = req.params;
         const { status } = req.body;
         OrderModel.updatedStatus(id, status)
-                .then(() => {
-                    res.json({
-                        status: true,
-                        message: "Status updated successfull"
-                    })
+            .then(() => {
+                res.json({
+                    status: true,
+                    message: "Status updated successfull"
                 })
-                .catch((error) => {
-                    console.log(error)
-                    res.status(500).json({ message: "Error updated status"})
+            })
+            .catch((error) => {
+                console.log(error)
+                res.status(500).json({ message: "Error updated status" })
+            })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, msg: "Interna Server Error" })
+    }
+}
+
+
+exports.createOrderByAdmin = async function (req, res) {
+    try {
+        const { product_id, quantity, totalPrice, userId } = req.body;
+        OrderModel.createOrder(userId, { product_id, quantity, total_price: totalPrice })
+            .then(() => {
+                res.json({
+                    status: true,
+                    message: "Order created successfull"
                 })
+            })
+            .catch((error) => {
+                console.log(error)
+                res.status(500).json({ message: "Error Order created" })
+            })
     } catch (error) {
         console.log(error);
         res.status(500).json({ success: false, msg: "Interna Server Error" })
