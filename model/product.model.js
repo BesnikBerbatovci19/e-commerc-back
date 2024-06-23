@@ -34,9 +34,9 @@ function getProductById(id) {
 function createProduct(id, data, path) {
     const query = "INSERT INTO product(user_id, subcategory_id, subcategory_slug, slug, name, description, price, status, inStock, path, warranty, discount, barcode, SKU, manufacter_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     const slug = generateSlugSubCategoryByName(data.name);
-
+    const manfacterId = data.manufacter_id ? data.manufacter_id : null;
     return new Promise((resolve, reject) => {
-        connection.query(query, [id, data.subcategory_id, data.subcategory_slug, slug, data.name, data.description, data.price, data.status, data.instock, path, data.warranty, data.discount, data.barcode, data.SKU, data.manufacter_id], (error, results) => {
+        connection.query(query, [id, data.subcategory_id, data.subcategory_slug, slug, data.name, data.description, data.price, data.status, data.instock, path, data.warranty, data.discount, data.barcode, data.SKU, manfacterId], (error, results) => {
             if (error) {
                 reject(error);
             } else {
@@ -101,7 +101,7 @@ function updateProduct(id, data, paths) {
         details =  COALESCE(?, details)
         WHERE id = ?
     `;
-
+    const manfacterId =  data.manufacter_id ? data.manufacter_id : null;
 
     return new Promise((resolve, reject) => {
         connection.query(fetchPathsQuery, [id], (error, results) => {
@@ -113,7 +113,7 @@ function updateProduct(id, data, paths) {
                 data.name,
                 data.subcategory_id,
                 data.subcategory_slug,
-                data.manufacter_id,
+                manfacterId,
                 data.price,
                 data.status,
                 data.instock,

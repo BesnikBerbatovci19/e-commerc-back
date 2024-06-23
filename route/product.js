@@ -11,7 +11,7 @@ router.post('/createProduct', authMiddleware, checkRole('admin'), uploadMiddlewa
 router.put('/update/:id', authMiddleware, checkRole('admin', 'user'), uploadMiddleware, ProducController.update);
 router.delete('/delete/:id', authMiddleware, checkRole('admin', 'user'), ProducController.delete);
 router.delete('/deletePhotoProduct/:id/:idPhoto', authMiddleware, checkRole('admin', 'user'), ProducController.deletePhoto);
-router.put('/setDealsOfTheWeek/:id', authMiddleware, checkRole('admin'), ProducController.updateDealsOfTheWeek)
+router.put('/setDealsOfTheWeek/:id', authMiddleware, checkRole('admin'), ProducController.updateDealsOfTheWeek);
 // product user
 router.post('/createProductUser', authMiddleware, checkRole('user'), uploadMiddleware, ProducController.createProductUser);
 router.get('/getUserProduct', authMiddleware, checkRole('user'), ProducController.getProductUser);
