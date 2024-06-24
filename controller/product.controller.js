@@ -197,28 +197,28 @@ exports.getSearchProduct = async function (req, res) {
             res.json(results);
         } catch (error) {
             res.status(500).json({ error: error.message });
-        } 
+        }
     } catch (error) {
         console.log(error);
         res.status(500).json({ success: false, msg: "Interna Server Error" })
     }
 }
 
-exports.updateDealsOfTheWeek = async function(req, res) {
+exports.updateDealsOfTheWeek = async function (req, res) {
     const { id } = req.params;
     const { value } = req.body;
     try {
-        ProductModel.setDealsOfTheWeek(id, value )
-                .then(() => {
-                    res.json({
-                        success: true,
-                        message: "Product updated successfull"
-                    })
+        ProductModel.setDealsOfTheWeek(id, value)
+            .then(() => {
+                res.json({
+                    success: true,
+                    message: "Product updated successfull"
                 })
-                .catch((error) => {
-                    console.log(error)
-                    res.status(500).json({ message: "Error updated product" })
-                })
+            })
+            .catch((error) => {
+                console.log(error)
+                res.status(500).json({ message: "Error updated product" })
+            })
     } catch (error) {
         console.log(error);
         res.status(500).json({ success: false, msg: "Interna Server Error" })
@@ -228,13 +228,29 @@ exports.updateDealsOfTheWeek = async function(req, res) {
 exports.getProductByDealsOfTheWeek = async function (req, res) {
     try {
         ProductModel.getDealsOfTheWeek()
-                    .then((product) => {
-                        res.json(product)
-                    })
-                    .catch((error) => {
-                        console.log(error)
-                        res.status(500).json({ message: "Error get product" })
-                    })
+            .then((product) => {
+                res.json(product)
+            })
+            .catch((error) => {
+                console.log(error)
+                res.status(500).json({ message: "Error get product" })
+            })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, msg: "Interna Server Error" })
+    }
+}
+
+exports.getAllProduct = async function (req, res) {
+    try {
+        ProductModel.getAllProduct()
+            .then((product) => {
+                res.json(product)
+            })
+            .catch((error) => {
+                console.log(error)
+                res.status(500).json({ message: "Error get product" })
+            })
     } catch (error) {
         console.log(error);
         res.status(500).json({ success: false, msg: "Interna Server Error" })
