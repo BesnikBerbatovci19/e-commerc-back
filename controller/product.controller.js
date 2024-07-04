@@ -63,7 +63,6 @@ exports.update = async function (req, res) {
     const { id } = req.params;
 
     const paths = req.files != undefined ? req.files.length > 0 ? req.files.map((file) => ({ id: uuidv4(), path: file.path })) : null : null;
-
     try {
         ProductModel.updateProduct(id, req.body, paths)
             .then(() => {
@@ -243,13 +242,51 @@ exports.getProductByDealsOfTheWeek = async function (req, res) {
 
 exports.getAllProduct = async function (req, res) {
     try {
-        ProductModel.getAllProduct()
+        ProductModel.getProductWithSpecification()
             .then((product) => {
                 res.json(product)
             })
             .catch((error) => {
                 console.log(error)
                 res.status(500).json({ message: "Error get product" })
+            })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, msg: "Interna Server Error" })
+    }
+}
+
+
+exports.CreateSpecification = async function (req, res) {
+    const { productId, specificationId, value } = req.body;
+    try {
+        ProductModel.CreateSpecification(productId, specificationId, value)
+            .then((product) => {
+                res.json(product)
+            })
+            .catch((error) => {
+                console.log(error)
+                res.status(500).json({ message: "Error get product" })
+            })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, msg: "Interna Server Error" })
+    }
+}
+
+exports.deleteSpecificationProduct = async function (req, res) {
+    const { id } = req.params;
+    try {
+        ProductModel.deleteSpecificationProduct(id)
+            .then(() => {
+                res.json({
+                    success: true,
+                    message: "Specification deleted successfull!"
+                })
+            })
+            .catch((error) => {
+                console.log(error)
+                res.status(500).json({ message: "Error delete specification" })
             })
     } catch (error) {
         console.log(error);
