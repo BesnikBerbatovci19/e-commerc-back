@@ -7,7 +7,8 @@ function getSpecification() {
             s.id AS specification_id, 
             s.name AS specification_name, 
             s.category_id, 
-            s.created_at, 
+            s.created_at,
+            s.is_show_in_filter,
             c.id AS category_id, 
             c.name AS category_name, 
             c.description AS category_description 
@@ -54,9 +55,25 @@ function deleteSpecification(id) {
     })
 }
 
+function isShowInFilter(value, id) {
+    const filterValue = value === 'undefined' ? 0 : parseInt(value);
+
+    const query = "UPDATE specification SET is_show_in_filter = ?  WHERE id = ? "
+
+    return new Promise((resolve, reject) => {
+        connection.query(query, [filterValue, id], (error, results) => {
+            if (error) {
+                return reject(error);
+            }
+            resolve(results);
+        });
+    });
+}
+
 module.exports = {
     createSpecification,
     getSpecification,
-    deleteSpecification
+    deleteSpecification,
+    isShowInFilter
 }
 

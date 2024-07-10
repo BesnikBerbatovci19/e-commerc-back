@@ -2,6 +2,7 @@ const ProductModel = require('../model/product.model');
 const { v4: uuidv4 } = require('uuid')
 const fs = require('fs');
 const csv = require('csv-parser');
+const { validationAddProductInput } = require('../validation/product/product');
 
 exports.getProduct = async function (req, res) {
     try {
@@ -40,24 +41,26 @@ exports.getProductById = async function (req, res) {
 
 exports.create = async function (req, res) {
     const paths = req.files.map((file) => ({ id: uuidv4(), path: file.path }));
+
+    const { errors, isValid } = validationAddProductInput(req.body);
+    if (!isValid) {
+        return res.status(400).json(errors);
+    }
     try {
-        ProductModel.createProduct(null, req.body, JSON.stringify(paths))
-            .then(() => {
-                res.json({
-                    success: true,
-                    message: "Product added successfull"
-                })
-            })
-            .catch((error) => {
-                console.log(error)
-                res.status(500).json({ message: "Error added product" })
-            })
+        await ProductModel.createProduct(null, req.body, JSON.stringify(paths));
+        res.json({
+            success: true,
+            message: "Product added successfully"
+        });
     } catch (error) {
         console.log(error);
-        res.status(500).json({ success: false, msg: "Interna Server Error" })
+        res.status(500).json({
+            success: false,
+            message: "Error adding product",
+            error: error.message 
+        });
     }
-}
-
+};
 
 exports.update = async function (req, res) {
     const { id } = req.params;
@@ -203,6 +206,27 @@ exports.getSearchProduct = async function (req, res) {
     }
 }
 
+exports.getSearchItemProduct = async function (req, res) {
+    try {
+        const { slug, page, limit } = req.params
+        const queryParams = req.body;
+
+        const pageNumber = page ? parseInt(page, 10) : 1;
+        const limitNumber = limit ? parseInt(limit, 10) : 10;
+        const offset = (pageNumber - 1) * limitNumber;
+
+        try {
+            const results = await ProductModel.searchQueryItemProduct(slug, queryParams, limitNumber, offset);
+            res.json(results);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, msg: "Interna Server Error" })
+    }
+}
+
 exports.updateDealsOfTheWeek = async function (req, res) {
     const { id } = req.params;
     const { value } = req.body;
@@ -288,6 +312,23 @@ exports.deleteSpecificationProduct = async function (req, res) {
                 console.log(error)
                 res.status(500).json({ message: "Error delete specification" })
             })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, msg: "Interna Server Error" })
+    }
+}
+
+exports.getSingelProduct = async function (req, res) {
+    const { slug } = req.params;
+    try {
+        ProductModel.getSingelProduct(slug)
+        .then((product) => {
+            res.json(product)
+        })
+        .catch((error) => {
+            console.log(error)
+            res.status(500).json({ message: "Error delete specification" })
+        })
     } catch (error) {
         console.log(error);
         res.status(500).json({ success: false, msg: "Interna Server Error" })

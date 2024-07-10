@@ -2,6 +2,7 @@ const connection = require('../config/database');
 const fs = require('fs');
 
 const { generateSlugSubCategoryByName } = require('../utils/generateSlug');
+const path = require('path');
 
 function getAllProduct() {
     const query = 'SELECT * FROM product'
@@ -81,19 +82,28 @@ function getProductById(id) {
 }
 
 function createProduct(id, data, path) {
-    const query = "INSERT INTO product(user_id, subcategory_id, subcategory_slug, slug, name, description, price, status, inStock, path, warranty, discount, barcode, SKU, manufacter_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    const query = `
+        INSERT INTO product(
+            user_id, subcategory_id, subcategory_slug, itemsubcategory_id, 
+            itemsubcategory_slug, slug, name, description, price, status, 
+            inStock, path, warranty, discount, barcode, SKU, manufacter_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
     const slug = generateSlugSubCategoryByName(data.name);
     const manfacterId = data.manufacter_id ? data.manufacter_id : null;
+
     const toNullIfEmpty = (value) => {
         return value === '' ? null : value;
     };
-
 
     return new Promise((resolve, reject) => {
         connection.query(query, [
             id,
             data.subcategory_id,
             data.subcategory_slug,
+            data.itemsubcategory_id,
+            data.itemsubcategory_slug,
             slug,
             data.name,
             data.description,
@@ -108,14 +118,13 @@ function createProduct(id, data, path) {
             toNullIfEmpty(manfacterId)
         ], (error, results) => {
             if (error) {
-                reject(error);
-            } else {
-                resolve(results[0])
+                return reject(error);
             }
-        })
-    })
-
+            resolve(results);
+        });
+    });
 }
+
 
 function deleteProduct(id) {
     const query = "DELETE FROM product WHERE id = ?";
@@ -158,7 +167,9 @@ function updateProduct(id, data, paths) {
             name = COALESCE(?, name),
             subcategory_id = COALESCE(?, subcategory_id),
             subcategory_slug = COALESCE(?, subcategory_slug),
-            manufacter_id  = COALESCE(?, manufacter_id), 
+            itemsubcategory_id = COALESCE(?, itemsubcategory_id),
+            itemsubcategory_slug = COALESCE(?, itemsubcategory_slug),
+            manufacter_id = COALESCE(?, manufacter_id), 
             price = COALESCE(?, price),
             status = COALESCE(?, status),
             inStock = COALESCE(?, inStock), 
@@ -171,7 +182,12 @@ function updateProduct(id, data, paths) {
         WHERE id = ?
     `;
 
-    const manufacter_id = data.manufacter_id === 'undefined' ? null : data.manufacter_id;
+    const toNullIfEmpty = (value) => {
+        return value === '' || value === 'undefined' || value === null ? null : value;
+    };
+
+    const manufacter_id = toNullIfEmpty(data.manufacter_id);
+    const discount = toNullIfEmpty(data.discount);
 
     return new Promise((resolve, reject) => {
         connection.query(fetchPathsQuery, [id], (error, results) => {
@@ -184,23 +200,25 @@ function updateProduct(id, data, paths) {
                 const existingPaths = JSON.parse(results[0].path);
                 joinPath = existingPaths.concat(paths);
             }
-           
+
             connection.query(
                 updateQuery,
                 [
-                    data.name,
-                    data.subcategory_id,
-                    data.subcategory_slug,
+                    toNullIfEmpty(data.name),
+                    toNullIfEmpty(data.subcategory_id),
+                    toNullIfEmpty(data.subcategory_slug),
+                    toNullIfEmpty(data.itemsubcategory_id),
+                    toNullIfEmpty(data.itemsubcategory_slug),
                     manufacter_id,
-                    data.price,
-                    data.status,
-                    data.inStock,
-                    data.warranty,
-                    data.discount,
-                    data.description,
-                    data.barcode,
-                    data.SKU,
-                    joinPath ? JSON.stringify(joinPath) : null,  
+                    toNullIfEmpty(data.price),
+                    toNullIfEmpty(data.status),
+                    toNullIfEmpty(data.instock),
+                    toNullIfEmpty(data.warranty),
+                    discount,
+                    toNullIfEmpty(data.description),
+                    toNullIfEmpty(data.barcode),
+                    toNullIfEmpty(data.SKU),
+                    joinPath ? JSON.stringify(joinPath) : null,
                     id
                 ],
                 (error, results) => {
@@ -214,6 +232,7 @@ function updateProduct(id, data, paths) {
         });
     });
 }
+
 
 
 function getProductUser(userId) {
@@ -301,6 +320,54 @@ function searchQuery(slug, data, limit, offset) {
     });
 }
 
+function searchQueryItemProduct(slug, data, limit, offset) {
+    let query = `SELECT * FROM product WHERE itemsubcategory_slug = ?`;
+    const queryParams = [slug];
+
+    if (data.inStock !== undefined) {
+        query += ` AND inStock = ?`;
+        queryParams.push(data.inStock);
+    }
+
+    if (data.discount === true) {
+        query += ` AND discount IS NOT NULL`;
+    }
+
+    if (data.status === true) {
+        query += ` AND status = 1`;
+    }
+
+    if (data.st === 1) {
+        query += ` AND created_at >= NOW() - INTERVAL 30 DAY`;
+    } else if (data.st === 1.4) {
+        query += ` AND created_at >= NOW() - INTERVAL 90 DAY`;
+    }
+
+    if (data.priceFrom !== undefined && data.priceTo !== undefined) {
+        query += ` AND price BETWEEN ? AND ?`;
+        queryParams.push(data.priceFrom, data.priceTo);
+    } else if (data.priceFrom !== undefined) {
+        query += ` AND price >= ?`;
+        queryParams.push(data.priceFrom);
+    } else if (data.priceTo !== undefined) {
+        query += ` AND price <= ?`;
+        queryParams.push(data.priceTo);
+    }
+
+    // Add pagination
+    query += ` LIMIT ? OFFSET ?`;
+    queryParams.push(limit, offset);
+
+    return new Promise((resolve, reject) => {
+        connection.query(query, queryParams, (error, results) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(results);
+            }
+        });
+    });
+}
 
 function setDealsOfTheWeek(id, value) {
     const query = `
@@ -349,11 +416,23 @@ function CreateSpecification(productId, specificationId, value) {
     })
 }
 
+function getSingelProduct(slug) {
+    const query = "SELECT * FROM product WHERE slug = ?";
+    return new Promise((reslove, reject) => {
+        connection.query(query, [slug], (error, results) => {
+            if (error) {
+                reject(error);
+            } else {
+                reslove(results[0]);
+            }
+        })
+    })
+}
 function getProductWithSpecification() {
     const query = `
         SELECT 
-        p.id AS product_id,
-        p.name AS product_name,
+        p.id AS id,
+        p.name AS name,
         p.description,
         p.user_id,
         p.subcategory_id,
@@ -361,6 +440,7 @@ function getProductWithSpecification() {
         p.itemsubcategory_id,
         p.itemsubcategory_slug,
         p.price,
+        p.slug,
         p.SKU,
         p.barcode,
         p.status,
@@ -368,6 +448,7 @@ function getProductWithSpecification() {
         p.warranty,
         p.is_deal_of_week,
         p.path,
+        p.discount,
         p.created_at AS product_created_at,
         p.updated_at AS product_updated_at,
         COALESCE(
@@ -433,5 +514,7 @@ module.exports = {
     setDealsOfTheWeek,
     getDealsOfTheWeek,
     getProductWithSpecification,
-    deleteSpecificationProduct
+    deleteSpecificationProduct,
+    searchQueryItemProduct,
+    getSingelProduct
 }
