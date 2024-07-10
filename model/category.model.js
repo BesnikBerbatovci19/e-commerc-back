@@ -133,7 +133,7 @@ FROM
             if (error) {
                 reject(error);
             } else { 
-                resolve(JSON.parse(results[0].categories));
+                resolve(results);
             }
         });
     });

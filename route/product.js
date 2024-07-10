@@ -12,6 +12,9 @@ router.put('/update/:id', authMiddleware, checkRole('admin', 'user'), uploadMidd
 router.delete('/delete/:id', authMiddleware, checkRole('admin', 'user'), ProducController.delete);
 router.delete('/deletePhotoProduct/:id/:idPhoto', authMiddleware, checkRole('admin', 'user'), ProducController.deletePhoto);
 router.put('/setDealsOfTheWeek/:id', authMiddleware, checkRole('admin'), ProducController.updateDealsOfTheWeek);
+router.post('/createSpecificationProduct', authMiddleware, checkRole('admin'), ProducController.CreateSpecification);
+router.delete('/deleteSpecificationProduct/:id', authMiddleware, checkRole('admin'), ProducController.deleteSpecificationProduct);
+
 // product user
 router.post('/createProductUser', authMiddleware, checkRole('user'), uploadMiddleware, ProducController.createProductUser);
 router.get('/getUserProduct', authMiddleware, checkRole('user'), ProducController.getProductUser);
@@ -19,8 +22,9 @@ router.get('/getUserProduct', authMiddleware, checkRole('user'), ProducControlle
 
 router.post("/getProductByCSV", ProducController.getProductByCSV);
 router.get('/getSearchProduct/:slug', ProducController.getSearchProduct);
+router.get('/getSearchItemProduct/:slug', ProducController.getSearchItemProduct);
 router.get('/getProductByDealsOfTheWeek', ProducController.getProductByDealsOfTheWeek);
 router.get('/getAllProduct', ProducController.getAllProduct);
-
+router.get('/getSingelProduct/:slug', ProducController.getSingelProduct)
 
 module.exports = router

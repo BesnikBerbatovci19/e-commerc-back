@@ -26,6 +26,28 @@ const getUserCounts = async () => {
 };
 
 
+const getCategoryAndSubCategor = async () => {
+    const queries = {
+        allCategory: "SELECT COUNT(*) as count FROM category",
+        allSubCategory: "SELECT COUNT(*) as count FROM subcategory",
+        allItemSubCategory: "SELECT COUNT(*) as count FROM item_subcategory"
+    }
+
+    const results = {};
+    await Promise.all(Object.keys(queries).map(key => {
+        return new Promise((resolve, reject) => {
+            connection.query(queries[key], (err, result) => {
+                if (err) reject(err);
+                results[key] = result[0].count;
+                resolve();
+            });
+        });
+    }));
+    return results;
+}
+
+
 module.exports = {
-    getUserCounts
+    getUserCounts,
+    getCategoryAndSubCategor
 };

@@ -54,13 +54,13 @@ exports.register = async function (req, res) {
                 const user = results[0];
 
                 if (user) {
-                    return res.json({ message: "Emai-l already exist" })
+                    return res.status(404).json({ email: "Email-i egziston" })
                 } else {
                     UserModel.createUser(name, surname, email, phone, address, password, role)
                         .then(() => {
                             res.json({
                                 success: true,
-                                message: "User register success full",
+                                message: "U regjistrua me sukses",
                             })
                         })
                         .catch((error) => {
@@ -88,18 +88,16 @@ exports.login = async function (req, res) {
             .then((results) => {
                 const user = results[0];
                 if (!user) {
-                    return res.json({
-                        success: false,
-                        message: "Email or Password are wrong!"
+                    return res.status(404).json({
+                        message: "Email-i ose fjalkalimi janë gabimë!"
                     })
                 }
 
                 const passwordMatch = bcrypt.compareSync(password, user.password);
 
                 if (!passwordMatch) {
-                    return res.json({
-                        success: false,
-                        message: "Email or Password are wrong!"
+                    return res.status(404).json({
+                        message: "Email-i ose fjalkalimi janë gabimë!"
                     })
                 }
 
