@@ -11,5 +11,6 @@ router.post('/register', UserController.register);
 router.post('/login', UserController.login);
 router.put('/update/:id', authMiddleware, checkRole('admin'), UserController.update);
 router.delete("/delete/:id", authMiddleware, checkRole('admin'), UserController.delete);
-
+router.get('/getUserById', authMiddleware, UserController.getUserById);
+router.put('/updateRoleUser', authMiddleware, UserController.updateRoleUser)
 module.exports = router;
