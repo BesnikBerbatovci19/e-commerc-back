@@ -40,6 +40,23 @@ exports.getUserById = async function(req, res) {
         res.status(500).json({ success: false, msg: "Interna Server Error" })
     }
 }
+
+exports.getUserById = async function(req, res) {
+    const { id } = req.user;
+    try {
+        UserModel.findUserById(id)
+            .then((user) => {
+                res.json(user)
+            })
+            .catch((error) => {
+                console.error("Error get user:", error)
+                res.status(500).json({ message: "Error get user" })
+            })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, msg: "Interna Server Error" })
+    }
+}
 exports.register = async function (req, res) {
     try {
         const { name, surname, email, phone, address, password, role } = req.body;
@@ -155,6 +172,27 @@ exports.update = async function (req, res) {
                 console.log(error)
                 res.status(500).json({ message: "Error update user" })
             })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, msg: "Interna update Error" })
+    }
+}
+
+exports.updateRoleUser = async function (req, res) {
+    const { id } = req.user;
+    const { name, surname, email, phone, address } = req.body;
+    try {
+        UserModel.updateRoleUser(name, surname, email, phone, address, id)
+        .then(() => {
+            res.json({
+                success: true,
+                message: "User update successfull",
+            })
+        })
+        .catch((error) => {
+            console.log(error)
+            res.status(500).json({ message: "Error update user" })
+        })
     } catch (error) {
         console.log(error);
         res.status(500).json({ success: false, msg: "Interna update Error" })

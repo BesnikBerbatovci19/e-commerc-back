@@ -190,8 +190,8 @@ exports.getSearchProduct = async function (req, res) {
         const { slug, page, limit } = req.params
         const queryParams = req.body;
 
-        const pageNumber = page ? parseInt(page, 10) : 1;
-        const limitNumber = limit ? parseInt(limit, 10) : 10;
+        const pageNumber = page ? parseInt(page, 30) : 1;
+        const limitNumber = limit ? parseInt(limit, 30) : 30;
         const offset = (pageNumber - 1) * limitNumber;
 
         try {
@@ -211,8 +211,8 @@ exports.getSearchItemProduct = async function (req, res) {
         const { slug, page, limit } = req.params
         const queryParams = req.body;
 
-        const pageNumber = page ? parseInt(page, 10) : 1;
-        const limitNumber = limit ? parseInt(limit, 10) : 10;
+        const pageNumber = page ? parseInt(page, 30) : 1;
+        const limitNumber = limit ? parseInt(limit, 30) : 30;
         const offset = (pageNumber - 1) * limitNumber;
 
         try {

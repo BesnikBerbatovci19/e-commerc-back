@@ -104,6 +104,30 @@ function deleteUser(id) {
     });
 }
 
+function updateRoleUser(name, surname, email, phone, address, id) {
+    let query = `
+    UPDATE user 
+    SET 
+        name = COALESCE(?, name),
+        surname = COALESCE(?, surname),
+        email = COALESCE(?, email),
+        phone = COALESCE(?, phone),
+        address = COALESCE(?, address)
+    WHERE id = ?;
+    `;
+
+    const params = [name, surname, email, phone, address, id];
+
+    return new Promise((resolve, reject) => {
+        connection.query(query, params, (error, results) => {
+            if (error) {
+                reject(error); 
+            } else {
+                resolve(results); 
+            }
+        });
+    });
+}
 
 module.exports = {
     findUserById,
@@ -111,5 +135,6 @@ module.exports = {
     findByEmail,
     updateUser,
     deleteUser,
-    getAllUser
+    getAllUser,
+    updateRoleUser
 }
