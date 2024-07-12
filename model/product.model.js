@@ -280,27 +280,27 @@ function searchQuery(slug, data, limit, offset) {
         queryParams.push(data.inStock);
     }
 
-    if (data.discount === true) {
+    if (data.discount === 'true') {
         query += ` AND discount IS NOT NULL`;
     }
 
-    if (data.status === true) {
+    if (data.arrivalTime === 'true') {
         query += ` AND status = 1`;
     }
 
-    if (data.st === 1) {
+    if (data.st === '1') {
         query += ` AND created_at >= NOW() - INTERVAL 30 DAY`;
-    } else if (data.st === 1.4) {
+    } else if (data.st === '1.4') {
         query += ` AND created_at >= NOW() - INTERVAL 90 DAY`;
     }
 
-    if (data.priceFrom !== undefined && data.priceTo !== undefined) {
+    if (data.priceFrom !== undefined && data.priceFrom !== '' && data.priceTo !== undefined && data.priceTo !== '') {
         query += ` AND price BETWEEN ? AND ?`;
         queryParams.push(data.priceFrom, data.priceTo);
-    } else if (data.priceFrom !== undefined) {
+    } else if (data.priceFrom !== undefined && data.priceFrom !== '') {
         query += ` AND price >= ?`;
         queryParams.push(data.priceFrom);
-    } else if (data.priceTo !== undefined) {
+    } else if (data.priceTo !== undefined && data.priceTo !== '') {
         query += ` AND price <= ?`;
         queryParams.push(data.priceTo);
     }
@@ -324,32 +324,33 @@ function searchQueryItemProduct(slug, data, limit, offset) {
     let query = `SELECT * FROM product WHERE itemsubcategory_slug = ?`;
     const queryParams = [slug];
 
+
     if (data.inStock !== undefined) {
         query += ` AND inStock = ?`;
         queryParams.push(data.inStock);
     }
 
-    if (data.discount === true) {
+    if (data.discount === 'true') {
         query += ` AND discount IS NOT NULL`;
     }
 
-    if (data.status === true) {
+    if (data.arrivalTime === 'true') {
         query += ` AND status = 1`;
     }
 
-    if (data.st === 1) {
+    if (data.st === '1') {
         query += ` AND created_at >= NOW() - INTERVAL 30 DAY`;
-    } else if (data.st === 1.4) {
+    } else if (data.st === '1.4') {
         query += ` AND created_at >= NOW() - INTERVAL 90 DAY`;
     }
 
-    if (data.priceFrom !== undefined && data.priceTo !== undefined) {
+    if (data.priceFrom !== undefined && data.priceFrom !== '' && data.priceTo !== undefined && data.priceTo !== '') {
         query += ` AND price BETWEEN ? AND ?`;
         queryParams.push(data.priceFrom, data.priceTo);
-    } else if (data.priceFrom !== undefined) {
+    } else if (data.priceFrom !== undefined && data.priceFrom !== '') {
         query += ` AND price >= ?`;
         queryParams.push(data.priceFrom);
-    } else if (data.priceTo !== undefined) {
+    } else if (data.priceTo !== undefined && data.priceTo !== '') {
         query += ` AND price <= ?`;
         queryParams.push(data.priceTo);
     }

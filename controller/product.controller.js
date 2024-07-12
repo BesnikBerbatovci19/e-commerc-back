@@ -188,8 +188,7 @@ exports.getProductByCSV = async function (req, res) {
 exports.getSearchProduct = async function (req, res) {
     try {
         const { slug, page, limit } = req.params
-        const queryParams = req.body;
-
+        const queryParams = req.query;
         const pageNumber = page ? parseInt(page, 30) : 1;
         const limitNumber = limit ? parseInt(limit, 30) : 30;
         const offset = (pageNumber - 1) * limitNumber;
@@ -209,8 +208,7 @@ exports.getSearchProduct = async function (req, res) {
 exports.getSearchItemProduct = async function (req, res) {
     try {
         const { slug, page, limit } = req.params
-        const queryParams = req.body;
-
+        const queryParams = req.query;
         const pageNumber = page ? parseInt(page, 30) : 1;
         const limitNumber = limit ? parseInt(limit, 30) : 30;
         const offset = (pageNumber - 1) * limitNumber;
