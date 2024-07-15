@@ -19,6 +19,8 @@ const statistic = require('./route/statistic');
 const ratingRoute = require('./route/ratings');
 const specificationRoute = require('./route/specification');
 const wishlistRoute = require('./route/wishList');
+const cartItemsRoute = require('./route/cartItems');
+const discountRoute = require('./route/discount');
 
 // middleware
 app.use(express.urlencoded({ extended: false }));
@@ -58,7 +60,8 @@ app.use('/api/statistic', statistic);
 app.use('/api/ratings', ratingRoute);
 app.use('/api/specification', specificationRoute);
 app.use('/api/wishlist', wishlistRoute);
-
+app.use('/api/cart', cartItemsRoute);
+app.use('/api/discount', discountRoute);
 
 const port = process.env.PORT || 5000;
 

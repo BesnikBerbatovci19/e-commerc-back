@@ -83,33 +83,35 @@ function getProductById(id) {
 
 function createProduct(id, data, path) {
     const query = `
-        INSERT INTO product(
-            user_id, subcategory_id, subcategory_slug, itemsubcategory_id, 
-            itemsubcategory_slug, slug, name, description, price, status, 
-            inStock, path, warranty, discount, barcode, SKU, manufacter_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO product (
+            user_id, category_id, category_slug, subcategory_id, subcategory_slug, 
+            itemsubcategory_id, itemsubcategory_slug, slug, name, description, 
+            price, status, inStock, path, warranty, discount, 
+            barcode, SKU, manufacter_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const slug = generateSlugSubCategoryByName(data.name);
-    const manfacterId = data.manufacter_id ? data.manufacter_id : null;
+    const manfacterId = data.manufacter_id || null;
+    const itemSubCatId = data.itemsubcategory_id || null;
+    const itemSubCatSlug = data.itemsubcategory_slug || null;
 
-    const toNullIfEmpty = (value) => {
-        return value === '' ? null : value;
-    };
-
+    const toNullIfEmpty = (value) => (value === '' ? null : value);
     return new Promise((resolve, reject) => {
         connection.query(query, [
             id,
+            data.category_id,
+            data.category_slug,
             data.subcategory_id,
             data.subcategory_slug,
-            data.itemsubcategory_id,
-            data.itemsubcategory_slug,
+            itemSubCatId,
+            itemSubCatSlug,
             slug,
             data.name,
             data.description,
             toNullIfEmpty(data.price),
             data.status,
-            data.instock,
+            data.instock,  
             toNullIfEmpty(path),
             toNullIfEmpty(data.warranty),
             toNullIfEmpty(data.discount),
