@@ -31,13 +31,9 @@ function findDiscount(code) {
 }
 
 function createDiscount({ code, amount, valid_from, valid_until }) {
-    const validFromFormatted = moment(valid_from, 'MM.DD.YYYY').format('YYYY-MM-DD');
-    const validUntilFormatted = moment(valid_until, 'MM.DD.YYYY').format('YYYY-MM-DD');
-
     const query = "INSERT INTO discounts (code, amount, valid_from, valid_until) VALUES (?, ?, ?, ?)";
-
     return new Promise((resolve, reject) => {
-        connection.query(query, [code, amount, validFromFormatted, validUntilFormatted], (error, results) => {
+        connection.query(query, [code, amount, valid_from ,valid_until], (error, results) => {
             if (error) {
                 reject(error);
             } else {
