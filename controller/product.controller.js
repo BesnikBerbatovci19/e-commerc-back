@@ -332,3 +332,20 @@ exports.getSingelProduct = async function (req, res) {
         res.status(500).json({ success: false, msg: "Interna Server Error" })
     }
 }
+
+exports.getDiscountProcut = async function (req, res) {
+    try {
+        const { slug, page, limit } = req.params
+        const queryParams = req.query;
+
+        try {
+            const results = await ProductModel.searchDiscountQuery(slug, queryParams);
+            res.json(results);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, msg: "Interna Server Error" })
+    }
+}

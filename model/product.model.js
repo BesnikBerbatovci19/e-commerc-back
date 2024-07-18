@@ -2,10 +2,9 @@ const connection = require('../config/database');
 const fs = require('fs');
 
 const { generateSlugSubCategoryByName } = require('../utils/generateSlug');
-const path = require('path');
 
 function getAllProduct() {
-    const query = 'SELECT * FROM product'
+    const query = 'SELECT * FROM product ORDER BY id DESC'
     return new Promise((resolve, reject) => {
         connection.query(query, (error, results) => {
             if (error) {
@@ -111,8 +110,8 @@ function createProduct(id, data, path) {
             data.description,
             toNullIfEmpty(data.price),
             data.status,
-            data.instock,  
-            toNullIfEmpty(path),
+            data.instock,
+            path,
             toNullIfEmpty(data.warranty),
             toNullIfEmpty(data.discount),
             toNullIfEmpty(data.barcode),
@@ -126,6 +125,7 @@ function createProduct(id, data, path) {
         });
     });
 }
+
 
 
 function deleteProduct(id) {
@@ -163,33 +163,17 @@ function deletePhoto(id, idPhoto) {
 
 function updateProduct(id, data, paths) {
     const fetchPathsQuery = `SELECT path FROM product WHERE id = ?`;
-    const updateQuery = `
-        UPDATE product 
-        SET 
-            name = COALESCE(?, name),
-            subcategory_id = COALESCE(?, subcategory_id),
-            subcategory_slug = COALESCE(?, subcategory_slug),
-            itemsubcategory_id = COALESCE(?, itemsubcategory_id),
-            itemsubcategory_slug = COALESCE(?, itemsubcategory_slug),
-            manufacter_id = COALESCE(?, manufacter_id), 
-            price = COALESCE(?, price),
-            status = COALESCE(?, status),
-            inStock = COALESCE(?, inStock), 
-            warranty = COALESCE(?, warranty),
-            discount = COALESCE(?, discount),
-            description = COALESCE(?, description),
-            barcode = COALESCE(?, barcode),
-            SKU = COALESCE(?, SKU),
-            path = COALESCE(?, path)  
-        WHERE id = ?
-    `;
 
     const toNullIfEmpty = (value) => {
-        return value === '' || value === 'undefined' || value === null ? null : value;
+        if (value === '' || value === 'undefined' || value === 'null') {
+            return null;
+        } else if (value === null || value === undefined) {
+            return null;
+        } else {
+            return value;
+        }
     };
 
-    const manufacter_id = toNullIfEmpty(data.manufacter_id);
-    const discount = toNullIfEmpty(data.discount);
 
     return new Promise((resolve, reject) => {
         connection.query(fetchPathsQuery, [id], (error, results) => {
@@ -203,37 +187,94 @@ function updateProduct(id, data, paths) {
                 joinPath = existingPaths.concat(paths);
             }
 
-            connection.query(
-                updateQuery,
-                [
-                    toNullIfEmpty(data.name),
-                    toNullIfEmpty(data.subcategory_id),
-                    toNullIfEmpty(data.subcategory_slug),
-                    toNullIfEmpty(data.itemsubcategory_id),
-                    toNullIfEmpty(data.itemsubcategory_slug),
-                    manufacter_id,
-                    toNullIfEmpty(data.price),
-                    toNullIfEmpty(data.status),
-                    toNullIfEmpty(data.instock),
-                    toNullIfEmpty(data.warranty),
-                    discount,
-                    toNullIfEmpty(data.description),
-                    toNullIfEmpty(data.barcode),
-                    toNullIfEmpty(data.SKU),
-                    joinPath ? JSON.stringify(joinPath) : null,
-                    id
-                ],
-                (error, results) => {
-                    if (error) {
-                        return reject(error);
-                    } else {
-                        resolve(results.affectedRows > 0);
-                    }
+            // Create a list of fields to be updated
+            const fieldsToUpdate = [];
+            const valuesToUpdate = [];
+
+            if (data.name !== undefined && toNullIfEmpty(data.name) !== null) {
+                fieldsToUpdate.push('name = ?');
+                valuesToUpdate.push(toNullIfEmpty(data.name));
+            }
+            if (data.subcategory_id !== undefined && toNullIfEmpty(data.subcategory_id) !== null) {
+                fieldsToUpdate.push('subcategory_id = ?');
+                valuesToUpdate.push(toNullIfEmpty(data.subcategory_id));
+            }
+            if (data.subcategory_slug !== undefined && toNullIfEmpty(data.subcategory_slug) !== null) {
+                fieldsToUpdate.push('subcategory_slug = ?');
+                valuesToUpdate.push(toNullIfEmpty(data.subcategory_slug));
+            }
+            if (data.itemsubcategory_id !== undefined && toNullIfEmpty(data.itemsubcategory_id) !== null) {
+                fieldsToUpdate.push('itemsubcategory_id = ?');
+                valuesToUpdate.push(toNullIfEmpty(data.itemsubcategory_id));
+            }
+            if (data.itemsubcategory_slug !== undefined && toNullIfEmpty(data.itemsubcategory_slug) !== null) {
+                fieldsToUpdate.push('itemsubcategory_slug = ?');
+                valuesToUpdate.push(toNullIfEmpty(data.itemsubcategory_slug));
+            }
+            if (data.manufacter_id !== undefined && toNullIfEmpty(data.manufacter_id) !== null) {
+                fieldsToUpdate.push('manufacter_id = ?');
+                valuesToUpdate.push(toNullIfEmpty(data.manufacter_id));
+            }
+            if (data.price !== undefined && toNullIfEmpty(data.price) !== null) {
+                fieldsToUpdate.push('price = ?');
+                valuesToUpdate.push(toNullIfEmpty(data.price));
+            }
+            if (data.status !== undefined && toNullIfEmpty(data.status) !== null) {
+                fieldsToUpdate.push('status = ?');
+                valuesToUpdate.push(toNullIfEmpty(data.status));
+            }
+            if (data.instock !== undefined && toNullIfEmpty(data.instock) !== null) {
+                fieldsToUpdate.push('inStock = ?');
+                valuesToUpdate.push(toNullIfEmpty(data.instock));
+            }
+            if (data.warranty !== undefined && toNullIfEmpty(data.warranty) !== null) {
+                fieldsToUpdate.push('warranty = ?');
+                valuesToUpdate.push(toNullIfEmpty(data.warranty));
+            }
+            if (data.discount !== undefined && toNullIfEmpty(data.discount) !== null) {
+                fieldsToUpdate.push('discount = ?');
+                valuesToUpdate.push(toNullIfEmpty(data.discount));
+            }
+            if (data.description !== undefined && toNullIfEmpty(data.description) !== null) {
+                fieldsToUpdate.push('description = ?');
+                valuesToUpdate.push(toNullIfEmpty(data.description));
+            }
+            if (data.barcode !== undefined && toNullIfEmpty(data.barcode) !== null) {
+                fieldsToUpdate.push('barcode = ?');
+                valuesToUpdate.push(toNullIfEmpty(data.barcode));
+            }
+            if (data.SKU !== undefined && toNullIfEmpty(data.SKU) !== null) {
+                fieldsToUpdate.push('SKU = ?');
+                valuesToUpdate.push(toNullIfEmpty(data.SKU));
+            }
+            if (joinPath !== undefined) {
+                fieldsToUpdate.push('path = ?');
+                valuesToUpdate.push(joinPath ? JSON.stringify(joinPath) : null);
+            }
+
+            if (fieldsToUpdate.length === 0) {
+                return resolve(false);
+            }
+
+            const updateQuery = `
+                UPDATE product 
+                SET ${fieldsToUpdate.join(', ')}
+                WHERE id = ?
+            `;
+            valuesToUpdate.push(id);
+
+            // Execute the update query
+            connection.query(updateQuery, valuesToUpdate, (error, results) => {
+                if (error) {
+                    return reject(error);
+                } else {
+                    resolve(results.affectedRows > 0);
                 }
-            );
+            });
         });
     });
 }
+
 
 
 
@@ -272,6 +313,47 @@ function createProductByCsv(data) {
     })
 }
 
+function searchDiscountQuery(slug, data) {
+    let query = `SELECT * FROM product WHERE discount IS NOT NULL`;
+    const queryParams = [slug];
+    if (data.inStock !== undefined) {
+        query += ` AND inStock = ?`;
+        queryParams.push(data.inStock);
+    }
+
+    if (data.arrivalTime === 'true') {
+        query += ` AND status = 1`;
+    }
+
+    if (data.st === '1') {
+        query += ` AND created_at >= NOW() - INTERVAL 30 DAY`;
+    } else if (data.st === '1.4') {
+        query += ` AND created_at >= NOW() - INTERVAL 90 DAY`;
+    }
+
+    if (data.priceFrom !== undefined && data.priceFrom !== '' && data.priceTo !== undefined && data.priceTo !== '') {
+        query += ` AND price BETWEEN ? AND ?`;
+        queryParams.push(data.priceFrom, data.priceTo);
+    } else if (data.priceFrom !== undefined && data.priceFrom !== '') {
+        query += ` AND price >= ?`;
+        queryParams.push(data.priceFrom);
+    } else if (data.priceTo !== undefined && data.priceTo !== '') {
+        query += ` AND price <= ?`;
+        queryParams.push(data.priceTo);
+    }
+
+
+
+    return new Promise((resolve, reject) => {
+        connection.query(query, queryParams, (error, results) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(results);
+            }
+        });
+    });
+}
 
 function searchQuery(slug, data, limit, offset) {
     let query = `SELECT * FROM product WHERE subcategory_slug = ?`;
@@ -307,8 +389,7 @@ function searchQuery(slug, data, limit, offset) {
         queryParams.push(data.priceTo);
     }
 
-    // Add pagination
-    query += ` LIMIT ? OFFSET ?`;
+    query += ` ORDER BY product.id DESC LIMIT ? OFFSET ?`;
     queryParams.push(limit, offset);
 
     return new Promise((resolve, reject) => {
@@ -420,7 +501,54 @@ function CreateSpecification(productId, specificationId, value) {
 }
 
 function getSingelProduct(slug) {
-    const query = "SELECT * FROM product WHERE slug = ?";
+    const query = `
+        SELECT 
+            p.id AS id,
+            p.name AS name,
+            p.description,
+            p.user_id,
+            p.subcategory_id,
+            p.subcategory_slug,
+            p.itemsubcategory_id,
+            p.itemsubcategory_slug,
+            p.price,
+            p.slug,
+            p.SKU,
+            p.barcode,
+            p.status,
+            p.inStock,
+            p.warranty,
+            p.is_deal_of_week,
+            p.path,
+            p.discount,
+            p.created_at AS product_created_at,
+            p.updated_at AS product_updated_at,
+            COALESCE(
+                JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'specification_id', ps.specification_id,
+                        'specification_name', s.name,
+                        'value', ps.value,
+                        'category_id', s.category_id,
+                        'created_at', ps.created_at
+                    )
+                ),
+                '[]'
+            ) AS specifications
+        FROM 
+            product p
+        LEFT JOIN 
+            product_specification ps ON p.id = ps.product_id
+        LEFT JOIN 
+            specification s ON ps.specification_id = s.id
+        WHERE 
+            p.slug = ?
+        GROUP BY 
+            p.id
+        ORDER BY 
+            p.id DESC;
+    `;
+
     return new Promise((reslove, reject) => {
         connection.query(query, [slug], (error, results) => {
             if (error) {
@@ -475,7 +603,7 @@ function getProductWithSpecification() {
     GROUP BY 
         p.id
     ORDER BY 
-        p.id;
+        p.id DESC;
     `
 
 
@@ -519,5 +647,6 @@ module.exports = {
     getProductWithSpecification,
     deleteSpecificationProduct,
     searchQueryItemProduct,
-    getSingelProduct
+    getSingelProduct,
+    searchDiscountQuery
 }

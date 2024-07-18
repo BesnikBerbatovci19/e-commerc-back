@@ -2,6 +2,7 @@ const DiscountModel = require('../model/discount.model');
 
 exports.createDiscount = async function (req, res) {
     const { code, amount, valid_from, valid_until } = req.body;
+ 
     try {
         const existDiscountCode = await DiscountModel.findDiscount(code);
         if (existDiscountCode.length > 0) {
