@@ -355,7 +355,7 @@ function searchDiscountQuery(slug, data) {
     });
 }
 
-function searchQuery(slug, data, limit, offset) {
+function searchQuery(slug, data) {
     let query = `SELECT * FROM product WHERE subcategory_slug = ?`;
     const queryParams = [slug];
 
@@ -389,8 +389,8 @@ function searchQuery(slug, data, limit, offset) {
         queryParams.push(data.priceTo);
     }
 
-    query += ` ORDER BY product.id DESC LIMIT ? OFFSET ?`;
-    queryParams.push(limit, offset);
+    query += ` ORDER BY id DESC LIMIT ?`;
+    queryParams.push(parseInt(data.limit, 10));
 
     return new Promise((resolve, reject) => {
         connection.query(query, queryParams, (error, results) => {
@@ -438,9 +438,8 @@ function searchQueryItemProduct(slug, data, limit, offset) {
         queryParams.push(data.priceTo);
     }
 
-    // Add pagination
-    query += ` LIMIT ? OFFSET ?`;
-    queryParams.push(limit, offset);
+    query += ` ORDER BY id DESC LIMIT ?`;
+    queryParams.push(parseInt(data.limit, 10));
 
     return new Promise((resolve, reject) => {
         connection.query(query, queryParams, (error, results) => {
@@ -559,63 +558,52 @@ function getSingelProduct(slug) {
         })
     })
 }
-function getProductWithSpecification() {
+
+function getProductWithSpecification(limit) {
     const query = `
         SELECT 
-        p.id AS id,
-        p.name AS name,
-        p.description,
-        p.user_id,
-        p.subcategory_id,
-        p.subcategory_slug,
-        p.itemsubcategory_id,
-        p.itemsubcategory_slug,
-        p.price,
-        p.slug,
-        p.SKU,
-        p.barcode,
-        p.status,
-        p.inStock,
-        p.warranty,
-        p.is_deal_of_week,
-        p.path,
-        p.discount,
-        p.created_at AS product_created_at,
-        p.updated_at AS product_updated_at,
-        COALESCE(
-            JSON_ARRAYAGG(
-                JSON_OBJECT(
-                    'specification_id', ps.specification_id,
-                    'specification_name', s.name,
-                    'value', ps.value,
-                    'category_id', s.category_id,
-                    'created_at', ps.created_at
-                )
-            ),
-            '[]'
-        ) AS specifications
-    FROM 
-        product p
-    LEFT JOIN 
-        product_specification ps ON p.id = ps.product_id
-    LEFT JOIN 
-        specification s ON ps.specification_id = s.id
-    GROUP BY 
-        p.id
-    ORDER BY 
-        p.id DESC;
-    `
-
+            p.id AS id,
+            p.name AS name,
+            p.description,
+            p.user_id,
+            p.subcategory_id,
+            p.subcategory_slug,
+            p.itemsubcategory_id,
+            p.itemsubcategory_slug,
+            p.price,
+            p.slug,
+            p.SKU,
+            p.barcode,
+            p.status,
+            p.inStock,
+            p.warranty,
+            p.is_deal_of_week,
+            p.path,
+            p.discount,
+            p.created_at AS product_created_at,
+            p.updated_at AS product_updated_at
+        FROM 
+            product p
+        LEFT JOIN 
+            product_specification ps ON p.id = ps.product_id
+        LEFT JOIN 
+            specification s ON ps.specification_id = s.id
+        GROUP BY 
+            p.id
+        ORDER BY 
+            p.id DESC
+        LIMIT ?;
+    `;
 
     return new Promise((resolve, reject) => {
-        connection.query(query, (error, results) => {
+        connection.query(query, [limit], (error, results) => {
             if (error) {
                 reject(error);
             } else {
-                resolve(results)
+                resolve(results);
             }
-        })
-    })
+        });
+    });
 }
 
 

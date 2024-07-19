@@ -187,16 +187,14 @@ exports.getProductByCSV = async function (req, res) {
 
 exports.getSearchProduct = async function (req, res) {
     try {
-        const { slug, page, limit } = req.params
+        const { slug } = req.params
         const queryParams = req.query;
-        const pageNumber = page ? parseInt(page, 30) : 1;
-        const limitNumber = limit ? parseInt(limit, 30) : 30;
-        const offset = (pageNumber - 1) * limitNumber;
-
+       
         try {
-            const results = await ProductModel.searchQuery(slug, queryParams, limitNumber, offset);
+            const results = await ProductModel.searchQuery(slug, queryParams);
             res.json(results);
         } catch (error) {
+            console.log(error)
             res.status(500).json({ error: error.message });
         }
     } catch (error) {
@@ -207,14 +205,10 @@ exports.getSearchProduct = async function (req, res) {
 
 exports.getSearchItemProduct = async function (req, res) {
     try {
-        const { slug, page, limit } = req.params
+        const { slug } = req.params
         const queryParams = req.query;
-        const pageNumber = page ? parseInt(page, 30) : 1;
-        const limitNumber = limit ? parseInt(limit, 30) : 30;
-        const offset = (pageNumber - 1) * limitNumber;
-
         try {
-            const results = await ProductModel.searchQueryItemProduct(slug, queryParams, limitNumber, offset);
+            const results = await ProductModel.searchQueryItemProduct(slug, queryParams);
             res.json(results);
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -263,8 +257,9 @@ exports.getProductByDealsOfTheWeek = async function (req, res) {
 }
 
 exports.getAllProduct = async function (req, res) {
+    const limit = parseInt(req.query.limit.limit, 10) || 10;
     try {
-        ProductModel.getProductWithSpecification()
+        ProductModel.getProductWithSpecification(limit)
             .then((product) => {
                 res.json(product)
             })
