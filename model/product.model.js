@@ -186,7 +186,7 @@ function updateProduct(id, data, paths) {
                 const existingPaths = JSON.parse(results[0].path);
                 joinPath = existingPaths.concat(paths);
             }
-
+        
             // Create a list of fields to be updated
             const fieldsToUpdate = [];
             const valuesToUpdate = [];
@@ -247,7 +247,7 @@ function updateProduct(id, data, paths) {
                 fieldsToUpdate.push('SKU = ?');
                 valuesToUpdate.push(toNullIfEmpty(data.SKU));
             }
-            if (joinPath !== undefined) {
+            if (joinPath !== null) {
                 fieldsToUpdate.push('path = ?');
                 valuesToUpdate.push(joinPath ? JSON.stringify(joinPath) : null);
             }
@@ -356,9 +356,9 @@ function searchDiscountQuery(slug, data) {
 }
 
 function searchQuery(slug, data) {
-    let query = `SELECT * FROM product WHERE subcategory_slug = ?`;
-    const queryParams = [slug];
-
+    let query = `SELECT * FROM product WHERE subcategory_slug = ? AND subcategory_id = ?`;
+    const queryParams = [slug, data.subCatId];
+  
     if (data.inStock !== undefined) {
         query += ` AND inStock = ?`;
         queryParams.push(data.inStock);
@@ -403,9 +403,9 @@ function searchQuery(slug, data) {
     });
 }
 
-function searchQueryItemProduct(slug, data, limit, offset) {
-    let query = `SELECT * FROM product WHERE itemsubcategory_slug = ?`;
-    const queryParams = [slug];
+function searchQueryItemProduct(slug, data) {
+    let query = `SELECT * FROM product WHERE itemsubcategory_slug = ? AND subcategory_id = ?`;
+    const queryParams = [slug, data.subCatId];
 
 
     if (data.inStock !== undefined) {
@@ -439,7 +439,7 @@ function searchQueryItemProduct(slug, data, limit, offset) {
     }
 
     query += ` ORDER BY id DESC LIMIT ?`;
-    queryParams.push(parseInt(data.limit, 10));
+    queryParams.push(parseInt(data.limit) ? parseInt(data.limit) : 10);
 
     return new Promise((resolve, reject) => {
         connection.query(query, queryParams, (error, results) => {
