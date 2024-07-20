@@ -189,7 +189,6 @@ exports.getSearchProduct = async function (req, res) {
     try {
         const { slug } = req.params
         const queryParams = req.query;
-       
         try {
             const results = await ProductModel.searchQuery(slug, queryParams);
             res.json(results);
@@ -211,6 +210,7 @@ exports.getSearchItemProduct = async function (req, res) {
             const results = await ProductModel.searchQueryItemProduct(slug, queryParams);
             res.json(results);
         } catch (error) {
+            console.log(error)
             res.status(500).json({ error: error.message });
         }
     } catch (error) {
