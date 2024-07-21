@@ -3,7 +3,11 @@ const { generateSlugSubCategoryByName } = require('../utils/generateSlug');
 
 
 function getAllItemSubCategory() {
-    const query = "SELECT * FROM item_subcategory";
+    const query = `
+    SELECT item_subcategory.*, subcategory.name AS subcategory_name
+    FROM item_subcategory
+    JOIN subcategory ON item_subcategory.subcategory_id = subcategory.id
+  `;
 
     return new Promise((resolve, reject) => {
         connection.query(query, (error, results) => {
