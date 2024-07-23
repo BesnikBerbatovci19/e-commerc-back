@@ -27,4 +27,5 @@ router.get('/getProductByDealsOfTheWeek', ProducController.getProductByDealsOfTh
 router.get('/getAllProduct', ProducController.getAllProduct);
 router.get('/getSingelProduct/:slug', ProducController.getSingelProduct)
 router.get('/getDiscountProcut', ProducController.getDiscountProcut)
+router.get('/getProductByCategory/:slug',ProducController.getProductByCategory);
 module.exports = router

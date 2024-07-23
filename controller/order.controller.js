@@ -23,10 +23,8 @@ exports.getOrderById = async function (req, res) {
 exports.createOrder = async function (req, res) {
     try {
         const { id } = req.user;
-
-        const orderPromises = req.body.map(order => OrderModel.createOrder(id, order));
-
-        Promise.all(orderPromises)
+        const { totalPrice, product } = req.body;
+        OrderModel.createOrder(id, totalPrice, product)
             .then(() => {
                 res.json({
                     success: true,

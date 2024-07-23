@@ -257,7 +257,7 @@ exports.getProductByDealsOfTheWeek = async function (req, res) {
 }
 
 exports.getAllProduct = async function (req, res) {
-    const limit = parseInt(req.query.limit.limit, 10) || 10;
+    const limit = parseInt(req.query.limit, 10) || 10;
     try {
         ProductModel.getProductWithSpecification(limit)
             .then((product) => {
@@ -330,13 +330,28 @@ exports.getSingelProduct = async function (req, res) {
 
 exports.getDiscountProcut = async function (req, res) {
     try {
-        const { slug, page, limit } = req.params
         const queryParams = req.query;
-
         try {
-            const results = await ProductModel.searchDiscountQuery(slug, queryParams);
+            const results = await ProductModel.searchDiscountQuery( queryParams);
             res.json(results);
         } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, msg: "Interna Server Error" })
+    }
+}
+
+exports.getProductByCategory = async function (req, res) {
+    try {
+        const { slug } = req.params
+        const queryParams = req.query;
+        try {
+            const results = await ProductModel.searchByCategory(slug, queryParams);
+            res.json(results);
+        } catch (error) {
+            console.log(error)
             res.status(500).json({ error: error.message });
         }
     } catch (error) {

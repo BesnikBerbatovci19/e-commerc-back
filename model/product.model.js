@@ -186,7 +186,7 @@ function updateProduct(id, data, paths) {
                 const existingPaths = JSON.parse(results[0].path);
                 joinPath = existingPaths.concat(paths);
             }
-        
+
             // Create a list of fields to be updated
             const fieldsToUpdate = [];
             const valuesToUpdate = [];
@@ -263,7 +263,6 @@ function updateProduct(id, data, paths) {
             `;
             valuesToUpdate.push(id);
 
-            // Execute the update query
             connection.query(updateQuery, valuesToUpdate, (error, results) => {
                 if (error) {
                     return reject(error);
@@ -313,12 +312,16 @@ function createProductByCsv(data) {
     })
 }
 
-function searchDiscountQuery(slug, data) {
+function searchDiscountQuery(data) {
     let query = `SELECT * FROM product WHERE discount IS NOT NULL`;
-    const queryParams = [slug];
+    const queryParams = [];
     if (data.inStock !== undefined) {
         query += ` AND inStock = ?`;
         queryParams.push(data.inStock);
+    }
+
+    if (data.discount === 'true') {
+        query += ` AND discount IS NOT NULL`;
     }
 
     if (data.arrivalTime === 'true') {
@@ -330,18 +333,22 @@ function searchDiscountQuery(slug, data) {
     } else if (data.st === '1.4') {
         query += ` AND created_at >= NOW() - INTERVAL 90 DAY`;
     }
-
     if (data.priceFrom !== undefined && data.priceFrom !== '' && data.priceTo !== undefined && data.priceTo !== '') {
         query += ` AND price BETWEEN ? AND ?`;
-        queryParams.push(data.priceFrom, data.priceTo);
+        queryParams.push(parseInt(data.priceFrom), parseInt(data.priceTo));
     } else if (data.priceFrom !== undefined && data.priceFrom !== '') {
         query += ` AND price >= ?`;
-        queryParams.push(data.priceFrom);
+        queryParams.push(parseInt(data.priceFrom));
     } else if (data.priceTo !== undefined && data.priceTo !== '') {
         query += ` AND price <= ?`;
-        queryParams.push(data.priceTo);
+        queryParams.push(parseInt(data.priceTo));
     }
 
+    if (data.removeSold === 'true') {
+        query += ` AND inStock > 0`;
+    }
+
+    query += ` ORDER BY inStock DESC, id DESC `;
 
 
     return new Promise((resolve, reject) => {
@@ -355,10 +362,10 @@ function searchDiscountQuery(slug, data) {
     });
 }
 
-function searchQuery(slug, data) {
-    let query = `SELECT * FROM product WHERE subcategory_slug = ? AND subcategory_id = ?`;
-    const queryParams = [slug, data.subCatId];
-  
+function searchByCategory(slug, data) {
+    let query = `SELECT * FROM product WHERE category_slug = ?`;
+    const queryParams = [slug];
+
     if (data.inStock !== undefined) {
         query += ` AND inStock = ?`;
         queryParams.push(data.inStock);
@@ -388,8 +395,73 @@ function searchQuery(slug, data) {
         query += ` AND price <= ?`;
         queryParams.push(data.priceTo);
     }
+    if (data.removeSold === 'true') {
+        query += ` AND inStock > 0`;
+    }
 
-    query += ` ORDER BY id DESC LIMIT ?`;
+    if (data.manufacter && data.manufacter.length > 0) {
+        const placeholders = data.manufacter.map(() => '?').join(',');
+        query += ` AND manufacter_id  IN (${placeholders})`;
+        queryParams.push(...data.manufacter);
+    }
+
+    query += ` ORDER BY inStock DESC, id DESC LIMIT ?`;
+    queryParams.push(parseInt(data.limit, 10));
+
+    return new Promise((resolve, reject) => {
+        connection.query(query, queryParams, (error, results) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(results);
+            }
+        });
+    });
+}
+function searchQuery(slug, data) {
+    let query = `SELECT * FROM product WHERE subcategory_slug = ? AND subcategory_id = ?`;
+    const queryParams = [slug, data.subCatId];
+
+    if (data.inStock !== undefined) {
+        query += ` AND inStock = ?`;
+        queryParams.push(data.inStock);
+    }
+
+    if (data.discount === 'true') {
+        query += ` AND discount IS NOT NULL`;
+    }
+
+    if (data.arrivalTime === 'true') {
+        query += ` AND status = 1`;
+    }
+
+    if (data.st === '1') {
+        query += ` AND created_at >= NOW() - INTERVAL 30 DAY`;
+    } else if (data.st === '1.4') {
+        query += ` AND created_at >= NOW() - INTERVAL 90 DAY`;
+    }
+
+    if (data.priceFrom !== undefined && data.priceFrom !== '' && data.priceTo !== undefined && data.priceTo !== '') {
+        query += ` AND price BETWEEN ? AND ?`;
+        queryParams.push(data.priceFrom, data.priceTo);
+    } else if (data.priceFrom !== undefined && data.priceFrom !== '') {
+        query += ` AND price >= ?`;
+        queryParams.push(data.priceFrom);
+    } else if (data.priceTo !== undefined && data.priceTo !== '') {
+        query += ` AND price <= ?`;
+        queryParams.push(data.priceTo);
+    }
+    if (data.removeSold === 'true') {
+        query += ` AND inStock > 0`;
+    }
+
+    if (data.manufacter && data.manufacter.length > 0) {
+        const placeholders = data.manufacter.map(() => '?').join(',');
+        query += ` AND manufacter_id  IN (${placeholders})`;
+        queryParams.push(...data.manufacter);
+    }
+
+    query += ` ORDER BY inStock DESC, id DESC LIMIT ?`;
     queryParams.push(parseInt(data.limit, 10));
 
     return new Promise((resolve, reject) => {
@@ -406,8 +478,6 @@ function searchQuery(slug, data) {
 function searchQueryItemProduct(slug, data) {
     let query = `SELECT * FROM product WHERE itemsubcategory_slug = ? AND subcategory_id = ?`;
     const queryParams = [slug, data.subCatId];
-
-
     if (data.inStock !== undefined) {
         query += ` AND inStock = ?`;
         queryParams.push(data.inStock);
@@ -437,8 +507,17 @@ function searchQueryItemProduct(slug, data) {
         query += ` AND price <= ?`;
         queryParams.push(data.priceTo);
     }
+    if (data.removeSold === 'true') {
+        query += ` AND inStock > 0`;
+    }
 
-    query += ` ORDER BY id DESC LIMIT ?`;
+    if (data.manufacter && data.manufacter.length > 0) {
+        const placeholders = data.manufacter.map(() => '?').join(',');
+        query += ` AND manufacter_id  IN (${placeholders})`;
+        queryParams.push(...data.manufacter);
+    }
+
+    query += ` ORDER BY inStock DESC, id DESC LIMIT ?`;
     queryParams.push(parseInt(data.limit) ? parseInt(data.limit) : 10);
 
     return new Promise((resolve, reject) => {
@@ -561,39 +640,39 @@ function getSingelProduct(slug) {
 
 function getProductWithSpecification(limit) {
     const query = `
-        SELECT 
-            p.id AS id,
-            p.name AS name,
-            p.description,
-            p.user_id,
-            p.subcategory_id,
-            p.subcategory_slug,
-            p.itemsubcategory_id,
-            p.itemsubcategory_slug,
-            p.price,
-            p.slug,
-            p.SKU,
-            p.barcode,
-            p.status,
-            p.inStock,
-            p.warranty,
-            p.is_deal_of_week,
-            p.path,
-            p.discount,
-            p.created_at AS product_created_at,
-            p.updated_at AS product_updated_at
-        FROM 
-            product p
-        LEFT JOIN 
-            product_specification ps ON p.id = ps.product_id
-        LEFT JOIN 
-            specification s ON ps.specification_id = s.id
-        GROUP BY 
-            p.id
-        ORDER BY 
-            p.id DESC
-        LIMIT ?;
-    `;
+    SELECT 
+        p.id AS id,
+        p.name AS name,
+        p.description,
+        p.user_id,
+        p.subcategory_id,
+        p.subcategory_slug,
+        p.itemsubcategory_id,
+        p.itemsubcategory_slug,
+        p.price,
+        p.slug,
+        p.SKU,
+        p.barcode,
+        p.status,
+        p.inStock,
+        p.warranty,
+        p.is_deal_of_week,
+        p.path,
+        p.discount,
+        p.created_at,
+        p.updated_at
+    FROM 
+        product p
+    LEFT JOIN 
+        product_specification ps ON p.id = ps.product_id
+    LEFT JOIN 
+        specification s ON ps.specification_id = s.id
+    GROUP BY 
+        p.id
+    ORDER BY 
+        p.inStock DESC, p.id DESC
+    LIMIT ?;
+`;
 
     return new Promise((resolve, reject) => {
         connection.query(query, [limit], (error, results) => {
@@ -636,5 +715,6 @@ module.exports = {
     deleteSpecificationProduct,
     searchQueryItemProduct,
     getSingelProduct,
-    searchDiscountQuery
+    searchDiscountQuery,
+    searchByCategory
 }
