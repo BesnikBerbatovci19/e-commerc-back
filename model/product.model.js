@@ -263,7 +263,6 @@ function updateProduct(id, data, paths) {
             `;
             valuesToUpdate.push(id);
 
-            // Execute the update query
             connection.query(updateQuery, valuesToUpdate, (error, results) => {
                 if (error) {
                     return reject(error);
@@ -349,6 +348,7 @@ function searchDiscountQuery(data) {
         query += ` AND inStock > 0`;
     }
 
+    query += ` ORDER BY inStock DESC, id DESC `;
 
 
     return new Promise((resolve, reject) => {
@@ -405,7 +405,7 @@ function searchByCategory(slug, data) {
         queryParams.push(...data.manufacter);
     }
 
-    query += ` ORDER BY id DESC LIMIT ?`;
+    query += ` ORDER BY inStock DESC, id DESC LIMIT ?`;
     queryParams.push(parseInt(data.limit, 10));
 
     return new Promise((resolve, reject) => {
@@ -461,7 +461,7 @@ function searchQuery(slug, data) {
         queryParams.push(...data.manufacter);
     }
 
-    query += ` ORDER BY id DESC LIMIT ?`;
+    query += ` ORDER BY inStock DESC, id DESC LIMIT ?`;
     queryParams.push(parseInt(data.limit, 10));
 
     return new Promise((resolve, reject) => {
@@ -517,7 +517,7 @@ function searchQueryItemProduct(slug, data) {
         queryParams.push(...data.manufacter);
     }
 
-    query += ` ORDER BY id DESC LIMIT ?`;
+    query += ` ORDER BY inStock DESC, id DESC LIMIT ?`;
     queryParams.push(parseInt(data.limit) ? parseInt(data.limit) : 10);
 
     return new Promise((resolve, reject) => {
@@ -640,39 +640,39 @@ function getSingelProduct(slug) {
 
 function getProductWithSpecification(limit) {
     const query = `
-        SELECT 
-            p.id AS id,
-            p.name AS name,
-            p.description,
-            p.user_id,
-            p.subcategory_id,
-            p.subcategory_slug,
-            p.itemsubcategory_id,
-            p.itemsubcategory_slug,
-            p.price,
-            p.slug,
-            p.SKU,
-            p.barcode,
-            p.status,
-            p.inStock,
-            p.warranty,
-            p.is_deal_of_week,
-            p.path,
-            p.discount,
-            p.created_at ,
-            p.updated_at
-        FROM 
-            product p
-        LEFT JOIN 
-            product_specification ps ON p.id = ps.product_id
-        LEFT JOIN 
-            specification s ON ps.specification_id = s.id
-        GROUP BY 
-            p.id
-        ORDER BY 
-            p.id DESC
-        LIMIT ?;
-    `;
+    SELECT 
+        p.id AS id,
+        p.name AS name,
+        p.description,
+        p.user_id,
+        p.subcategory_id,
+        p.subcategory_slug,
+        p.itemsubcategory_id,
+        p.itemsubcategory_slug,
+        p.price,
+        p.slug,
+        p.SKU,
+        p.barcode,
+        p.status,
+        p.inStock,
+        p.warranty,
+        p.is_deal_of_week,
+        p.path,
+        p.discount,
+        p.created_at,
+        p.updated_at
+    FROM 
+        product p
+    LEFT JOIN 
+        product_specification ps ON p.id = ps.product_id
+    LEFT JOIN 
+        specification s ON ps.specification_id = s.id
+    GROUP BY 
+        p.id
+    ORDER BY 
+        p.inStock DESC, p.id DESC
+    LIMIT ?;
+`;
 
     return new Promise((resolve, reject) => {
         connection.query(query, [limit], (error, results) => {

@@ -55,19 +55,24 @@ function getOrderById(id) {
     })
 }
 
-
-function createOrder(userId, data) {
-    const query = "INSERT INTO orders(user_id, product_id, quantity, total_price) VALUES (?, ?, ?, ?)"
-
+function createOrder(userId, totalPrice, products) {
     return new Promise((resolve, reject) => {
-        connection.query(query, [userId, data.product_id, data.quantity, data.total_price], (error, results) => {
-            if (error) {
-                reject(error);
-            } else {
-                resolve(results[0])
-            }
-        })
-    })
+        const createQuery = "INSERT INTO orders(user_id, total_price) VALUES(?, ?)";
+        
+        connection.query(createQuery, [userId, totalPrice], (error, result) => {
+            if (error) return reject(error);
+            
+            const orderId = result.insertId;
+            const orderItems = JSON.parse(products).map(product => [orderId, product.id, product.quantity]);
+            const insertOrderItemsQuery = 'INSERT INTO order_items (order_id, product_id, quantity) VALUES ?';
+            
+            connection.query(insertOrderItemsQuery, [orderItems], (err, result) => {
+                if (err) return reject(err);
+                
+                resolve('Order created successfully');
+            });
+        });
+    });
 }
 
 function deleteOrder(id) {
