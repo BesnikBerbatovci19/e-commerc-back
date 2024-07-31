@@ -363,8 +363,19 @@ function searchDiscountQuery(data) {
 }
 
 function searchByCategory(slug, data) {
-    let query = `SELECT * FROM product WHERE category_slug = ?`;
-    const queryParams = [slug];
+    let query = `SELECT * FROM product`;
+    const queryParams = [];
+    console.log('qqqq')
+
+    if (data.q !== '') {
+        console.log('hello')
+        query += ` WHERE name LIKE ? OR description LIKE ?`;
+        const searchTerm = `%${data.q}%`;
+        queryParams.push(searchTerm, searchTerm);
+    } else {
+        query += ` WHERE category_slug = ?`;
+        queryParams.push(slug);
+    }
 
     if (data.inStock !== undefined) {
         query += ` AND inStock = ?`;
@@ -401,7 +412,7 @@ function searchByCategory(slug, data) {
 
     if (data.manufacter && data.manufacter.length > 0) {
         const placeholders = data.manufacter.map(() => '?').join(',');
-        query += ` AND manufacter_id  IN (${placeholders})`;
+        query += ` AND manufacter_id IN (${placeholders})`;
         queryParams.push(...data.manufacter);
     }
 
