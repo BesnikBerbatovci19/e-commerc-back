@@ -36,10 +36,9 @@ function createWishList(product_id, biskoId) {
 }
 
 function deleteFromWishlist(productId, biskoId) {
-    const query = 'DELETE FROM wishlist WHERE id = ? AND bisko_Id = ?';
-
+    const query = `DELETE FROM wishlist WHERE product_id = ${productId} AND bisko_Id = '${biskoId}'`;
     return new Promise((resolve, reject) => {
-        connection.query(query, [productId, biskoId], (error, results) => {
+        connection.query(query,(error, results) => {
             if (error) {
                 reject(error);
             } else {

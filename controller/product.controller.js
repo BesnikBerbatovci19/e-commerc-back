@@ -57,7 +57,7 @@ exports.create = async function (req, res) {
         res.status(500).json({
             success: false,
             message: "Error adding product",
-            error: error.message 
+            error: error.message
         });
     }
 };
@@ -315,13 +315,13 @@ exports.getSingelProduct = async function (req, res) {
     const { slug } = req.params;
     try {
         ProductModel.getSingelProduct(slug)
-        .then((product) => {
-            res.json(product)
-        })
-        .catch((error) => {
-            console.log(error)
-            res.status(500).json({ message: "Error delete specification" })
-        })
+            .then((product) => {
+                res.json(product)
+            })
+            .catch((error) => {
+                console.log(error)
+                res.status(500).json({ message: "Error delete specification" })
+            })
     } catch (error) {
         console.log(error);
         res.status(500).json({ success: false, msg: "Interna Server Error" })
@@ -332,7 +332,7 @@ exports.getDiscountProcut = async function (req, res) {
     try {
         const queryParams = req.query;
         try {
-            const results = await ProductModel.searchDiscountQuery( queryParams);
+            const results = await ProductModel.searchDiscountQuery(queryParams);
             res.json(results);
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -354,6 +354,28 @@ exports.getProductByCategory = async function (req, res) {
             console.log(error)
             res.status(500).json({ error: error.message });
         }
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, msg: "Interna Server Error" })
+    }
+}
+
+exports.countProductCategory = async function (req, res) {
+    const { category_id } = req.params;
+    try {
+        const results = await ProductModel.countProductCategory(category_id);
+        res.json(results)
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, msg: "Interna Server Error" })
+    }
+}
+
+exports.countProductSubCategory = async function (req, res) {
+    const { subcategory_id } = req.params;
+    try {
+        const results = await ProductModel.countProductSubCategory(subcategory_id);
+        res.json(results)
     } catch (error) {
         console.log(error);
         res.status(500).json({ success: false, msg: "Interna Server Error" })

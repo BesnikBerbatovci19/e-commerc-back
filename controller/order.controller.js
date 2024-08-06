@@ -1,4 +1,5 @@
 const OrderModel = require('../model/order.model');
+const { validationOrderInput } = require('../validation/order/order');
 
 exports.getAllOrder = async function (req, res) {
     try {
@@ -19,12 +20,29 @@ exports.getOrderById = async function (req, res) {
 
 }
 
+exports.getOrderByUser = async function (req, res) {
+    const { id } = req.user;
+     try {
+        OrderModel.getOrderByUser(id)
+        .then((orders) => res.json(orders))
+        .catch((error => {
+            console.error("Error get orders :", error)
+            res.status(500).json({ message: "Error get orders" })
+        }))
+     } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, msg: "Interna Server Error" }) 
+     }
+}
 
 exports.createOrder = async function (req, res) {
     try {
-        const { id } = req.user;
-        const { totalPrice, product } = req.body;
-        OrderModel.createOrder(id, totalPrice, product)
+        const { id } = req.user
+        const { errors, isValid } = validationOrderInput(req.body);
+        if (!isValid) {
+            return res.status(404).json(errors);
+        }
+        OrderModel.createOrder(id, req.body)
             .then(() => {
                 res.json({
                     success: true,
@@ -35,6 +53,21 @@ exports.createOrder = async function (req, res) {
                 console.log(error);
                 res.status(500).json({ message: "Error creating orders" });
             });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, msg: "Interna Server Error" })
+    }
+}
+
+exports.getDetailsOrder = async function(req, res) {
+    try {
+        const { id } = req.params;
+        OrderModel.getDetailsOrder(id)
+                .then((order) => res.json(order))
+                .catch((error) => {
+                    console.log(error);
+                    res.status(500).json({ message: "Error geting order" });
+                })
     } catch (error) {
         console.log(error);
         res.status(500).json({ success: false, msg: "Interna Server Error" })

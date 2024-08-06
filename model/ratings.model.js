@@ -86,7 +86,8 @@ function getRatingsByUser(userId) {
         u.email AS user_email,
         p.name AS product_name,
         p.slug AS product_slug,
-        p.path AS product_path
+        p.path AS product_path,
+        p.SKU
     FROM 
         ratings r
     JOIN 

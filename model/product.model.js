@@ -591,51 +591,57 @@ function CreateSpecification(productId, specificationId, value) {
 
 function getSingelProduct(slug) {
     const query = `
-        SELECT 
-            p.id AS id,
-            p.name AS name,
-            p.description,
-            p.user_id,
-            p.subcategory_id,
-            p.subcategory_slug,
-            p.itemsubcategory_id,
-            p.itemsubcategory_slug,
-            p.price,
-            p.slug,
-            p.SKU,
-            p.barcode,
-            p.status,
-            p.inStock,
-            p.warranty,
-            p.is_deal_of_week,
-            p.path,
-            p.discount,
-            p.created_at AS product_created_at,
-            p.updated_at AS product_updated_at,
-            COALESCE(
-                JSON_ARRAYAGG(
-                    JSON_OBJECT(
-                        'specification_id', ps.specification_id,
-                        'specification_name', s.name,
-                        'value', ps.value,
-                        'category_id', s.category_id,
-                        'created_at', ps.created_at
-                    )
-                ),
-                '[]'
-            ) AS specifications
-        FROM 
-            product p
-        LEFT JOIN 
-            product_specification ps ON p.id = ps.product_id
-        LEFT JOIN 
-            specification s ON ps.specification_id = s.id
-        WHERE 
-            p.slug = ?
-        GROUP BY 
-            p.id
-        ORDER BY 
-            p.id DESC;
+       SELECT 
+        p.id AS id,
+        p.name AS name,
+        p.category_slug AS categoryName,
+        p.description,
+        p.user_id,
+        p.subcategory_id,
+        p.subcategory_slug,
+        p.itemsubcategory_id,
+        p.itemsubcategory_slug,
+        p.price,
+        p.slug,
+        p.SKU,
+        p.barcode,
+        p.status,
+        p.inStock,
+        p.warranty,
+        p.is_deal_of_week,
+        p.path,
+        p.discount,
+        p.created_at AS product_created_at,
+        p.updated_at AS product_updated_at,
+        COALESCE(
+            JSON_ARRAYAGG(
+                JSON_OBJECT(
+                    'specification_id', ps.specification_id,
+                    'specification_name', s.name,
+                    'value', ps.value,
+                    'category_id', s.category_id,
+                    'created_at', ps.created_at
+                )
+            ),
+            '[]'
+        ) AS specifications,
+        AVG(r.rating) AS average_rating,
+        COUNT(r.rating) AS rating_count
+    FROM 
+        product p
+    LEFT JOIN 
+        product_specification ps ON p.id = ps.product_id
+    LEFT JOIN 
+        specification s ON ps.specification_id = s.id
+    LEFT JOIN 
+        ratings r ON p.id = r.product_id
+    WHERE 
+        p.slug = ?
+    GROUP BY 
+        p.id
+    ORDER BY 
+        p.id DESC;
+
     `;
 
     return new Promise((reslove, reject) => {
@@ -709,6 +715,67 @@ function deleteSpecificationProduct(id) {
         })
     })
 }
+
+
+function countProductCategory(categoryId) {
+    const query = `
+            SELECT
+                p.category_id,
+                COUNT(p.id) AS total_products,
+                SUM(CASE WHEN p.status = 1 THEN 1 ELSE 0 END) AS in_time,
+                SUM(CASE WHEN p.inStock > 0 THEN 1 ELSE 0 END) AS in_stock_products,
+                SUM(CASE WHEN p.inStock = 0 THEN 1 ELSE 0 END) AS sold,
+                SUM(CASE WHEN p.discount > 0 THEN 1 ELSE 0 END) AS discounted_products,
+                SUM(CASE WHEN p.created_at >= NOW() - INTERVAL 30 DAY THEN 1 ELSE 0 END) AS products_last_30_days,
+                SUM(CASE WHEN p.created_at >= NOW() - INTERVAL 90 DAY THEN 1 ELSE 0 END) AS products_last_90_days
+            FROM
+                product p
+            WHERE
+                p.category_id = ?
+            GROUP BY
+                p.category_id;
+        `;
+
+    return new Promise((resolve, reject) => {
+        connection.query(query, [categoryId], (error, results) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(results)
+            }
+        })
+    })
+}
+
+function countProductSubCategory(subcategoryId) {
+    const query = `
+    SELECT
+        p.category_id,
+        COUNT(p.id) AS total_products,
+        SUM(CASE WHEN p.status = 1 THEN 1 ELSE 0 END) AS in_time,
+        SUM(CASE WHEN p.inStock > 0 THEN 1 ELSE 0 END) AS in_stock_products,
+        SUM(CASE WHEN p.inStock = 0 THEN 1 ELSE 0 END) AS sold,
+        SUM(CASE WHEN p.discount > 0 THEN 1 ELSE 0 END) AS discounted_products,
+        SUM(CASE WHEN p.created_at >= NOW() - INTERVAL 30 DAY THEN 1 ELSE 0 END) AS products_last_30_days,
+        SUM(CASE WHEN p.created_at >= NOW() - INTERVAL 90 DAY THEN 1 ELSE 0 END) AS products_last_90_days
+    FROM
+        product p
+    WHERE
+        p.category_id = ?
+    GROUP BY
+        p.category_id;
+`;
+
+    return new Promise((resolve, reject) => {
+        connection.query(query, [subcategoryId], (error, results) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(results)
+            }
+        })
+    })
+}
 module.exports = {
     CreateSpecification,
     getAllProduct,
@@ -727,5 +794,7 @@ module.exports = {
     searchQueryItemProduct,
     getSingelProduct,
     searchDiscountQuery,
-    searchByCategory
+    searchByCategory,
+    countProductCategory,
+    countProductSubCategory
 }
