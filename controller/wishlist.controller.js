@@ -39,6 +39,7 @@ exports.createWishList = async function (req, res) {
 }
 exports.deleteFromWishList = async function (req, res) {
     const { biskoId, productId } = req.params;
+
     try {
         WishListModel.deleteFromWishlist(productId, biskoId)
             .then(() => {
