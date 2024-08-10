@@ -3,7 +3,7 @@ const { v4: uuidv4 } = require('uuid')
 const fs = require('fs');
 const csv = require('csv-parser');
 const { validationAddProductInput } = require('../validation/product/product');
-
+const xlsx = require('xlsx');
 exports.getProduct = async function (req, res) {
     try {
         ProductModel.getAllProduct()
@@ -172,15 +172,26 @@ exports.getProductUser = async function (req, res) {
 
 
 exports.getProductByCSV = async function (req, res) {
-    fs.createReadStream('./file/products.csv')
-        .pipe(csv())
-        .on('data', (data) => {
-
-            // ProductModel.createProductByCsv(data)
-        })
-        .on('end', () => {
-            // You can now work with the data
-        });
+    const workbook = xlsx.readFile('./file/optika_gacaferi_produktet.xlsx');
+    
+    // Get the first sheet in the workbook
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    
+    // Convert the sheet to JSON
+    const data = xlsx.utils.sheet_to_json(sheet);
+    data.forEach((row) => {
+        ProductModel.createProductByCsv(row);
+    });
+    // fs.createReadStream('./file/optika_gacaferi_produktet.xlsx')
+    //     .pipe(csv())
+    //     .on('data', (data) => {
+    //         console.log(data)
+    //         // ProductModel.createProductByCsv(data)
+    //     })
+    //     .on('end', () => {
+    //         // You can now work with the data
+    //     });
 }
 
 

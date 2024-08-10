@@ -92,6 +92,36 @@ function getManufacterByCatId(cat_id) {
     })
 }
 
+function getManufacterBySubCatId(id) {
+    const query = `
+    SELECT
+        m.id ,
+        m.name,
+        m.slug,
+        COUNT(p.id) AS product_count
+    FROM
+        manufacter m
+    LEFT JOIN
+        product p ON m.id = p.manufacter_id
+    WHERE
+        m.category_id = ?
+    GROUP BY
+        m.id, m.name
+    ORDER BY
+        product_count DESC;
+`;
+
+return new Promise((resolve, reject) => {
+    connection.query(query, [cat_id], (error, results) => {
+        if (error) {
+            reject(error);
+        } else {
+            resolve(results)
+        }
+    })
+})
+}
+
 
 
 module.exports = {
@@ -99,5 +129,6 @@ module.exports = {
     getManufacterNameById,
     createManufacterName,
     deleteManufacterName,
-    getManufacterByCatId
+    getManufacterByCatId,
+    getManufacterBySubCatId
 }
