@@ -7,5 +7,5 @@ router.post("/createCartItems", CartItemsController.createCartItems);
 router.get("/getCartItemsByBiskoId/:biskoId", CartItemsController.getCartItemsByBiskoId);
 router.put('/updateQuantity', CartItemsController.updateQuantity);
 router.delete('/deleteCartItem/:id', CartItemsController.deleteCartItem)
-router.delete('/deleteCartItems/:biskoId' ,CartItemsController.deleteCartItems)
+router.delete('/deleteCartItems/:biskoId' , CartItemsController.deleteCartItems)
 module.exports = router;

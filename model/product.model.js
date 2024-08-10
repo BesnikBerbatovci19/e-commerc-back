@@ -293,13 +293,32 @@ function getProductUser(userId) {
 
 function createProductByCsv(data) {
     const query = "INSERT INTO product(user_id, subcategory_id, subcategory_slug, slug, name, description, price, status, inStock, path, warranty, discount, barcode, manufacturernumber) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    
+    let category_id = null;
+    let category_slug = null;
     let subcategory_id = null;
     let subcategory_slug = null;
-    if (data.category == "Home & Garden > Household Appliance Accessories") {
-        subcategory_id = 9;
-        subcategory_slug = "kopësht";
-    }
+    let itemsubcategory_id = null;
+    let itemsubcategory_slug = null;
+    const category = data.Categories.split(';')[1];
 
+
+    if(category === "Femra") {
+        category_id = 13;
+        category_slug =  "aksesorë";
+        subcategory_id = 69;
+        subcategory_slug = "femra";
+        itemsubcategory_id = 37;
+        itemsubcategory_slug = "syza";
+    } else if(category === "Meshkuj") {
+        category_id = 13;
+        category_slug = "aksesorë";
+        subcategory_id = 70;
+        subcategory_slug = "meshkuj";
+        itemsubcategory_id = 40;
+        itemsubcategory_slug = "syza";
+    }
+   
 
     return new Promise((resolve, reject) => {
         connection.query(query, [null, subcategory_id, subcategory_slug, data.search_name, data.name, JSON.stringify(data.description), data.price, 1, 1, data.image, data.warranty, null, data.SKU, data.SKU], (error, results) => {
@@ -363,20 +382,9 @@ function searchDiscountQuery(data) {
 }
 
 function searchByCategory(slug, data) {
-    let query = `SELECT * FROM product`;
-    const queryParams = [];
-    console.log('qqqq')
-
-    if (data.q !== '') {
-        console.log('hello')
-        query += ` WHERE name LIKE ? OR description LIKE ?`;
-        const searchTerm = `%${data.q}%`;
-        queryParams.push(searchTerm, searchTerm);
-    } else {
-        query += ` WHERE category_slug = ?`;
-        queryParams.push(slug);
-    }
-
+    let query = `SELECT * FROM product WHERE category_slug = ?`;	  
+    const queryParams = [slug];
+  
     if (data.inStock !== undefined) {
         query += ` AND inStock = ?`;
         queryParams.push(data.inStock);
@@ -412,7 +420,7 @@ function searchByCategory(slug, data) {
 
     if (data.manufacter && data.manufacter.length > 0) {
         const placeholders = data.manufacter.map(() => '?').join(',');
-        query += ` AND manufacter_id IN (${placeholders})`;
+        query += ` AND manufacter_id  IN (${placeholders})`;
         queryParams.push(...data.manufacter);
     }
 

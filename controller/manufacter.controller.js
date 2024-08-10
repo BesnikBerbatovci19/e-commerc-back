@@ -90,3 +90,20 @@ exports.getManufacterByCatId = async function (req, res) {
         res.status(500).json({ success: false, msg: "Interna Server Error" })
     }
 }
+
+exports.getManufacterBySubCatId = async function (req, res) {
+    const { id } = req.params;
+    try {
+        ManufacterModel.getManufacterBySubCatId(id)
+            .then((response) => {
+                res.json(response)
+            })
+            .catch((error) => {
+                console.log(error)
+                res.status(500).json({ message: "Error geting Manfucter" })
+            })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, msg: "Interna Server Error" })
+    }
+}
