@@ -30,4 +30,6 @@ router.get('/getDiscountProcut', ProducController.getDiscountProcut)
 router.get('/getProductByCategory/:slug', ProducController.getProductByCategory);
 router.get('/countProductCategory/:category_id', ProducController.countProductCategory);
 router.get('/countProductSubCategory/subcategory_id', ProducController.countProductSubCategory);
+router.get('/searchProduct', ProducController.searchProduct);
+router.get('/getSearchGlobalPorduct', ProducController.getSearchGlobalPorduct);
 module.exports = router

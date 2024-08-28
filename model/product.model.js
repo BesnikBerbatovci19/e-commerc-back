@@ -1,8 +1,10 @@
 const connection = require('../config/database');
 const fs = require('fs');
-
+const axios = require('axios');
+const path = require('path');
+const sharp = require('sharp');
 const { generateSlugSubCategoryByName } = require('../utils/generateSlug');
-
+const { v4: uuidv4 } = require('uuid')
 function getAllProduct() {
     const query = 'SELECT * FROM product ORDER BY id DESC'
     return new Promise((resolve, reject) => {
@@ -291,45 +293,193 @@ function getProductUser(userId) {
     })
 }
 
-function createProductByCsv(data) {
-    const query = "INSERT INTO product(user_id, subcategory_id, subcategory_slug, slug, name, description, price, status, inStock, path, warranty, discount, barcode, manufacturernumber) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-    
-    let category_id = null;
-    let category_slug = null;
-    let subcategory_id = null;
-    let subcategory_slug = null;
-    let itemsubcategory_id = null;
-    let itemsubcategory_slug = null;
-    const category = data.Categories.split(';')[1];
-
-
-    if(category === "Femra") {
-        category_id = 13;
-        category_slug =  "aksesorë";
-        subcategory_id = 69;
-        subcategory_slug = "femra";
-        itemsubcategory_id = 37;
-        itemsubcategory_slug = "syza";
-    } else if(category === "Meshkuj") {
-        category_id = 13;
-        category_slug = "aksesorë";
-        subcategory_id = 70;
-        subcategory_slug = "meshkuj";
-        itemsubcategory_id = 40;
-        itemsubcategory_slug = "syza";
+async function createProductByCsv(data) {
+    const query = "INSERT INTO product(category_id, category_slug, subcategory_id, subcategory_slug, itemsubcategory_id, itemsubcategory_slug, slug, name, description, price, status, inStock, path, discount, barcode, SKU) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    const checkBarcodeQuery = "SELECT COUNT(*) AS count FROM product WHERE barcode = ?";
+    if (data.Categories) {
+        const category = data.Categories.includes('Kozmetikë')
+        const subcat = data.Categories.includes("Kujdes për lëkurë");
+        const itemsubcat = data.Categories.includes("Përkujdesje ndaj diellit")
+        let category_slug = null;
+        let subcategory_id = null;
+        let subcategory_slug = null;
+        let itemsubcategory_id = null;
+        let itemsubcategory_slug = null;
+        if (category) {
+            category_id = 11;
+            category_slug = "kozmetikë";
+        } else if (subcat) {
+            subcategory_id = 61;
+            subcategory_slug = "kujdesi-pr-lekur";
+        } else if (itemsubcat) {
+            itemsubcategory_id = 18;
+            itemsubcategory_slug = "Përkujdesje ndaj diellit";
+        }
+        const slug = generateSlugSubCategoryByName(data.Name);
+        return new Promise((resolve, reject) => {
+            connection.query(query, [
+                category_id,
+                category_slug,
+                subcategory_id,        // subcategory_id
+                subcategory_slug,      // subcategory_slug
+                itemsubcategory_id,
+                itemsubcategory_slug,
+                slug,                  // slug (generated)
+                data.Name,             // name
+                JSON.stringify(data.FullDescription), // description
+                Math.round(data.OldPrice),            // price
+                1,                     // status
+                data.StoreStockQuantity, // inStock
+                '',            // path (assuming data.image is the correct path)
+                Math.round(data.Price), // discount (use data.warranty or null if not present)
+                data.Gtin,                  // barcode (pass null if not provided)
+                data.Gtin               // SKU
+            ], (error, results) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(results[0]);
+                }
+            });
+        });
     }
-   
-
-    return new Promise((resolve, reject) => {
-        connection.query(query, [null, subcategory_id, subcategory_slug, data.search_name, data.name, JSON.stringify(data.description), data.price, 1, 1, data.image, data.warranty, null, data.SKU, data.SKU], (error, results) => {
-            if (error) {
-                reject(error);
-            } else {
-                resolve(results[0])
-            }
-        })
-    })
 }
+
+// async function createProductByCsv(data) {
+//     const outputDir = 'uploads/product';
+//     const query = "INSERT INTO product(category_id, category_slug, subcategory_id, subcategory_slug, itemsubcategory_id, itemsubcategory_slug, slug, name, description, price, status, inStock, path, discount, barcode, SKU) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+//     const checkBarcodeQuery = "SELECT COUNT(*) AS count FROM product WHERE barcode = ?";
+//     const cat = data.Categories.split(';')[0];
+//     const sub = data.Categories.split(';')[1];
+//     const itemSub = data.Categories.split(';')[2];
+//     let category_id = null;
+//     let category_slug = null;
+//     let subcategory_id = null;
+//     let subcategory_slug = null;
+//     let itemsubcategory_id = null;
+//     let itemsubcategory_slug = null;
+//     if (cat === "Aksesorë" && data.Foto !== 0 && data.StoreStockQuantity !== 0) {
+//         if (
+//             !(cat === "Aksesorë" && (
+//                 (sub === "Femra" && itemSub === "Syze") ||
+//                 (sub === "Meshkuj" && itemSub === "Syze") ||
+//                 (sub === "Për të dy gjinitë" && itemSub === "Syze")
+//             ))
+//         ) {
+//             return null;
+//         }
+//         if (sub === "Femra" && itemSub === "Syze") {
+//             category_id = 13;
+//             category_slug = "aksesorë";
+//             subcategory_id = 69;
+//             subcategory_slug = "femra";
+//             itemsubcategory_id = 37;
+//             itemsubcategory_slug = "syza";
+//         } else if (sub === "Meshkuj" && itemSub === "Syze") {
+//             category_id = 13;
+//             category_slug = "aksesorë";
+//             subcategory_id = 70;
+//             subcategory_slug = "meshkuj";
+//             itemsubcategory_id = 40;
+//             itemsubcategory_slug = "syza";
+//         } else if (sub === "Për të dy gjinitë" && itemSub === "Syze") {
+//             category_id = 13;
+//             category_slug = "aksesorë";
+//             subcategory_id = 71;
+//             subcategory_slug = "meshkuj";
+//             itemsubcategory_id = 43;
+//             itemsubcategory_slug = "syza";
+//         }
+
+//         const slug = generateSlugSubCategoryByName(data.Name);
+//         const productExists = await new Promise((resolve, reject) => {
+//             connection.query(checkBarcodeQuery, [data.Gtin], (error, results) => {
+//                 if (error) {
+//                     reject(error);
+//                 } else {
+//                     resolve(results[0].count > 0);
+//                 }
+//             });
+//         });
+
+//         if (productExists) {
+//             return null;
+//         }
+
+//         const pathPhoto = await downloadAndResizeImage(data.Foto, outputDir, 300, 200)
+//         if (pathPhoto) {
+//             const paths = [{ id: uuidv4(), path: pathPhoto }];
+//             return new Promise((resolve, reject) => {
+//                 connection.query(query, [
+//                     category_id,
+//                     category_slug,
+//                     subcategory_id,        // subcategory_id
+//                     subcategory_slug,      // subcategory_slug
+//                     itemsubcategory_id,
+//                     itemsubcategory_slug,
+//                     slug,                  // slug (generated)
+//                     data.Name,             // name
+//                     JSON.stringify(data.FullDescription), // description
+//                     Math.round(data.OldPrice),            // price
+//                     1,                     // status
+//                     data.StoreStockQuantity, // inStock
+//                     JSON.stringify(paths),            // path (assuming data.image is the correct path)
+//                     Math.round(data.Price), // discount (use data.warranty or null if not present)
+//                     data.Gtin,                  // barcode (pass null if not provided)
+//                     data.Gtin               // SKU
+//                 ], (error, results) => {
+//                     if (error) {
+//                         reject(error);
+//                     } else {
+//                         resolve(results[0]);
+//                     }
+//                 });
+//             });
+//         }
+
+//     }
+
+// }
+const downloadAndResizeImage = async (imageUrl, outputDir, width, height) => {
+    try {
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+        }
+
+        const fileName = `${Date.now()}-${path.basename(imageUrl.split('?')[0])}`; // Remove query parameters
+        const filePath = path.join(outputDir, fileName);
+
+        const response = await axios({
+            url: imageUrl,
+            method: 'GET',
+            responseType: 'arraybuffer'
+        });
+
+        const contentType = response.headers['content-type'];
+        if (!contentType.startsWith('image/')) {
+            return null;
+        }
+
+        try {
+            await sharp(response.data)
+                .resize(width, height, {
+                    fit: sharp.fit.contain,
+                    background: { r: 255, g: 255, b: 255, alpha: 1 }
+                })
+                .toFile(filePath);
+
+            return filePath;
+        } catch (sharpError) {
+            return null;
+        }
+    } catch (error) {
+        return null;
+    }
+
+};
+
+
+
 
 function searchDiscountQuery(data) {
     let query = `SELECT * FROM product WHERE discount IS NOT NULL`;
@@ -382,170 +532,219 @@ function searchDiscountQuery(data) {
 }
 
 function searchByCategory(slug, data) {
-    let query = `SELECT * FROM product WHERE category_slug = ?`;	  
+    let baseQuery = `FROM product WHERE category_slug = ?`;
     const queryParams = [slug];
-  
+
     if (data.inStock !== undefined) {
-        query += ` AND inStock = ?`;
+        baseQuery += ` AND inStock = ?`;
         queryParams.push(data.inStock);
     }
 
     if (data.discount === 'true') {
-        query += ` AND discount IS NOT NULL`;
+        baseQuery += ` AND discount IS NOT NULL`;
     }
 
     if (data.arrivalTime === 'true') {
-        query += ` AND status = 1`;
+        baseQuery += ` AND status = 1`;
     }
 
     if (data.st === '1') {
-        query += ` AND created_at >= NOW() - INTERVAL 30 DAY`;
+        baseQuery += ` AND created_at >= NOW() - INTERVAL 30 DAY`;
     } else if (data.st === '1.4') {
-        query += ` AND created_at >= NOW() - INTERVAL 90 DAY`;
+        baseQuery += ` AND created_at >= NOW() - INTERVAL 90 DAY`;
     }
 
     if (data.priceFrom !== undefined && data.priceFrom !== '' && data.priceTo !== undefined && data.priceTo !== '') {
-        query += ` AND price BETWEEN ? AND ?`;
+        baseQuery += ` AND price BETWEEN ? AND ?`;
         queryParams.push(data.priceFrom, data.priceTo);
     } else if (data.priceFrom !== undefined && data.priceFrom !== '') {
-        query += ` AND price >= ?`;
+        baseQuery += ` AND price >= ?`;
         queryParams.push(data.priceFrom);
     } else if (data.priceTo !== undefined && data.priceTo !== '') {
-        query += ` AND price <= ?`;
+        baseQuery += ` AND price <= ?`;
         queryParams.push(data.priceTo);
     }
+
     if (data.removeSold === 'true') {
-        query += ` AND inStock > 0`;
+        baseQuery += ` AND inStock > 0`;
     }
 
     if (data.manufacter && data.manufacter.length > 0) {
         const placeholders = data.manufacter.map(() => '?').join(',');
-        query += ` AND manufacter_id  IN (${placeholders})`;
+        baseQuery += ` AND manufacter_id IN (${placeholders})`;
         queryParams.push(...data.manufacter);
     }
 
-    query += ` ORDER BY inStock DESC, id DESC LIMIT ?`;
-    queryParams.push(parseInt(data.limit, 10));
+    const countQuery = `SELECT COUNT(*) as total ${baseQuery}`;
+
+    const limit = parseInt(data.limit, 10) || 10;
+    const page = parseInt(data.page, 10) || 1;
+    const offset = (page - 1) * limit;
+    const fetchQuery = `SELECT * ${baseQuery} ORDER BY inStock DESC, id DESC LIMIT ? OFFSET ?`;
+    const fetchQueryParams = [...queryParams, limit, offset];
 
     return new Promise((resolve, reject) => {
-        connection.query(query, queryParams, (error, results) => {
-            if (error) {
-                reject(error);
-            } else {
-                resolve(results);
+        connection.query(countQuery, queryParams, (countError, countResults) => {
+            if (countError) {
+                return reject(countError);
             }
+
+            connection.query(fetchQuery, fetchQueryParams, (fetchError, fetchResults) => {
+                if (fetchError) {
+                    return reject(fetchError);
+                }
+
+                resolve({
+                    total: countResults[0].total,
+                    products: fetchResults
+                });
+            });
         });
     });
 }
+
+
+
 function searchQuery(slug, data) {
-    let query = `SELECT * FROM product WHERE subcategory_slug = ? AND subcategory_id = ?`;
+    let baseQuery = `FROM product WHERE subcategory_slug = ? AND subcategory_id = ?`;
     const queryParams = [slug, data.subCatId];
 
     if (data.inStock !== undefined) {
-        query += ` AND inStock = ?`;
+        baseQuery += ` AND inStock = ?`;
         queryParams.push(data.inStock);
     }
 
     if (data.discount === 'true') {
-        query += ` AND discount IS NOT NULL`;
+        baseQuery += ` AND discount IS NOT NULL`;
     }
 
     if (data.arrivalTime === 'true') {
-        query += ` AND status = 1`;
+        baseQuery += ` AND status = 1`;
     }
 
     if (data.st === '1') {
-        query += ` AND created_at >= NOW() - INTERVAL 30 DAY`;
+        baseQuery += ` AND created_at >= NOW() - INTERVAL 30 DAY`;
     } else if (data.st === '1.4') {
-        query += ` AND created_at >= NOW() - INTERVAL 90 DAY`;
+        baseQuery += ` AND created_at >= NOW() - INTERVAL 90 DAY`;
     }
 
     if (data.priceFrom !== undefined && data.priceFrom !== '' && data.priceTo !== undefined && data.priceTo !== '') {
-        query += ` AND price BETWEEN ? AND ?`;
+        baseQuery += ` AND price BETWEEN ? AND ?`;
         queryParams.push(data.priceFrom, data.priceTo);
     } else if (data.priceFrom !== undefined && data.priceFrom !== '') {
-        query += ` AND price >= ?`;
+        baseQuery += ` AND price >= ?`;
         queryParams.push(data.priceFrom);
     } else if (data.priceTo !== undefined && data.priceTo !== '') {
-        query += ` AND price <= ?`;
+        baseQuery += ` AND price <= ?`;
         queryParams.push(data.priceTo);
     }
+
     if (data.removeSold === 'true') {
-        query += ` AND inStock > 0`;
+        baseQuery += ` AND inStock > 0`;
     }
 
     if (data.manufacter && data.manufacter.length > 0) {
         const placeholders = data.manufacter.map(() => '?').join(',');
-        query += ` AND manufacter_id  IN (${placeholders})`;
+        baseQuery += ` AND manufacter_id IN (${placeholders})`;
         queryParams.push(...data.manufacter);
     }
 
-    query += ` ORDER BY inStock DESC, id DESC LIMIT ?`;
-    queryParams.push(parseInt(data.limit, 10));
+
+    const countQuery = `SELECT COUNT(*) as total ${baseQuery}`;
+
+    const limit = parseInt(data.limit, 10) || 10;
+    const page = parseInt(data.page, 10) || 1;
+    const offset = (page - 1) * limit;
+    const fetchQuery = `SELECT * ${baseQuery} ORDER BY inStock DESC, id DESC LIMIT ? OFFSET ?`;
+    const fetchQueryParams = [...queryParams, limit, offset];
 
     return new Promise((resolve, reject) => {
-        connection.query(query, queryParams, (error, results) => {
-            if (error) {
-                reject(error);
-            } else {
-                resolve(results);
+        connection.query(countQuery, queryParams, (countError, countResults) => {
+            if (countError) {
+                return reject(countError);
             }
+
+            connection.query(fetchQuery, fetchQueryParams, (fetchError, fetchResults) => {
+                if (fetchError) {
+                    return reject(fetchError);
+                }
+
+                resolve({
+                    total: countResults[0].total,
+                    products: fetchResults
+                });
+            });
         });
     });
 }
+
 
 function searchQueryItemProduct(slug, data) {
-    let query = `SELECT * FROM product WHERE itemsubcategory_slug = ? AND subcategory_id = ?`;
+    let baseQuery = `FROM product WHERE itemsubcategory_slug = ? AND subcategory_id = ?`;
     const queryParams = [slug, data.subCatId];
     if (data.inStock !== undefined) {
-        query += ` AND inStock = ?`;
+        baseQuery += ` AND inStock = ?`;
         queryParams.push(data.inStock);
     }
 
     if (data.discount === 'true') {
-        query += ` AND discount IS NOT NULL`;
+        baseQuery += ` AND discount IS NOT NULL`;
     }
 
     if (data.arrivalTime === 'true') {
-        query += ` AND status = 1`;
+        baseQuery += ` AND status = 1`;
     }
 
     if (data.st === '1') {
-        query += ` AND created_at >= NOW() - INTERVAL 30 DAY`;
+        baseQuery += ` AND created_at >= NOW() - INTERVAL 30 DAY`;
     } else if (data.st === '1.4') {
-        query += ` AND created_at >= NOW() - INTERVAL 90 DAY`;
+        baseQuery += ` AND created_at >= NOW() - INTERVAL 90 DAY`;
     }
 
     if (data.priceFrom !== undefined && data.priceFrom !== '' && data.priceTo !== undefined && data.priceTo !== '') {
-        query += ` AND price BETWEEN ? AND ?`;
+        baseQuery += ` AND price BETWEEN ? AND ?`;
         queryParams.push(data.priceFrom, data.priceTo);
     } else if (data.priceFrom !== undefined && data.priceFrom !== '') {
-        query += ` AND price >= ?`;
+        baseQuery += ` AND price >= ?`;
         queryParams.push(data.priceFrom);
     } else if (data.priceTo !== undefined && data.priceTo !== '') {
-        query += ` AND price <= ?`;
+        baseQuery += ` AND price <= ?`;
         queryParams.push(data.priceTo);
     }
     if (data.removeSold === 'true') {
-        query += ` AND inStock > 0`;
+        baseQuery += ` AND inStock > 0`;
     }
 
     if (data.manufacter && data.manufacter.length > 0) {
         const placeholders = data.manufacter.map(() => '?').join(',');
-        query += ` AND manufacter_id  IN (${placeholders})`;
+        baseQuery += ` AND manufacter_id  IN (${placeholders})`;
         queryParams.push(...data.manufacter);
     }
 
-    query += ` ORDER BY inStock DESC, id DESC LIMIT ?`;
-    queryParams.push(parseInt(data.limit) ? parseInt(data.limit) : 10);
+    const countQuery = `SELECT COUNT(*) as total ${baseQuery}`;
+
+    const limit = parseInt(data.limit, 10) || 10;
+    const page = parseInt(data.page, 10) || 1;
+    const offset = (page - 1) * limit;
+    const fetchQuery = `SELECT * ${baseQuery} ORDER BY inStock DESC, id DESC LIMIT ? OFFSET ?`;
+    const fetchQueryParams = [...queryParams, limit, offset];
 
     return new Promise((resolve, reject) => {
-        connection.query(query, queryParams, (error, results) => {
-            if (error) {
-                reject(error);
-            } else {
-                resolve(results);
+        connection.query(countQuery, queryParams, (countError, countResults) => {
+            if (countError) {
+                return reject(countError);
             }
+
+            connection.query(fetchQuery, fetchQueryParams, (fetchError, fetchResults) => {
+                if (fetchError) {
+                    return reject(fetchError);
+                }
+
+                resolve({
+                    total: countResults[0].total,
+                    products: fetchResults
+                });
+            });
         });
     });
 }
@@ -784,6 +983,101 @@ function countProductSubCategory(subcategoryId) {
         })
     })
 }
+
+function searchProductLive(searchQuery) {
+    const query = `
+        SELECT * FROM product WHERE name LIKE ? LIMIT 10
+        `;
+    const values = [`%${searchQuery}%`];
+    return new Promise((resolve, reject) => {
+        connection.query(query, values, (error, results) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(results);
+            }
+        });
+    });
+}
+
+function searchProductLives(searchQuery, data) {
+    let baseQuery = `
+        FROM product 
+        WHERE 
+        (name LIKE ? OR description LIKE ?) 
+       
+    `;
+    const queryParams = [`%${searchQuery}%`, `%${searchQuery}%`];
+
+    if (data.inStock !== undefined) {
+        baseQuery += ` AND inStock = ?`;
+        queryParams.push(data.inStock);
+    }
+
+    if (data.discount === 'true') {
+        baseQuery += ` AND discount IS NOT NULL`;
+    }
+
+    if (data.arrivalTime === 'true') {
+        baseQuery += ` AND status = 1`;
+    }
+
+    if (data.st === '1') {
+        baseQuery += ` AND created_at >= NOW() - INTERVAL 30 DAY`;
+    } else if (data.st === '1.4') {
+        baseQuery += ` AND created_at >= NOW() - INTERVAL 90 DAY`;
+    }
+
+    if (data.priceFrom !== undefined && data.priceFrom !== '' && data.priceTo !== undefined && data.priceTo !== '') {
+        baseQuery += ` AND price BETWEEN ? AND ?`;
+        queryParams.push(data.priceFrom, data.priceTo);
+    } else if (data.priceFrom !== undefined && data.priceFrom !== '') {
+        baseQuery += ` AND price >= ?`;
+        queryParams.push(data.priceFrom);
+    } else if (data.priceTo !== undefined && data.priceTo !== '') {
+        baseQuery += ` AND price <= ?`;
+        queryParams.push(data.priceTo);
+    }
+
+    if (data.removeSold === 'true') {
+        baseQuery += ` AND inStock > 0`;
+    }
+
+    if (data.manufacter && data.manufacter.length > 0) {
+        const placeholders = data.manufacter.map(() => '?').join(',');
+        baseQuery += ` AND manufacter_id IN (${placeholders})`;
+        queryParams.push(...data.manufacter);
+    }
+
+    const countQuery = `SELECT COUNT(*) as total ${baseQuery}`;
+
+    const limit = parseInt(data.limit, 10) || 10;
+    const page = parseInt(data.page, 10) || 1;
+    const offset = (page - 1) * limit;
+    const fetchQuery = `SELECT * ${baseQuery} ORDER BY inStock DESC, id DESC LIMIT ? OFFSET ?`;
+    const fetchQueryParams = [...queryParams, limit, offset];
+
+    return new Promise((resolve, reject) => {
+        connection.query(countQuery, queryParams, (countError, countResults) => {
+            if (countError) {
+                return reject(countError);
+            }
+
+            connection.query(fetchQuery, fetchQueryParams, (fetchError, fetchResults) => {
+                if (fetchError) {
+                    return reject(fetchError);
+                }
+
+                resolve({
+                    total: countResults[0].total,
+                    products: fetchResults
+                });
+            });
+        });
+    });
+}
+
+
 module.exports = {
     CreateSpecification,
     getAllProduct,
@@ -804,5 +1098,7 @@ module.exports = {
     searchDiscountQuery,
     searchByCategory,
     countProductCategory,
-    countProductSubCategory
+    countProductSubCategory,
+    searchProductLive,
+    searchProductLives
 }

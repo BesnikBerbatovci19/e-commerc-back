@@ -2,18 +2,30 @@ const connection = require('../config/database');
 
 
 function createCartItems(bisko_id, product_id, quantity) {
-    const query = "INSERT INTO cart_items(bisko_id, product_id, quantity) VALUES (?, ?, ?)";
-
+    const selectQuery = "SELECT * FROM cart_items WHERE bisko_id = ? AND product_id = ?";
+    const insertQuery = "INSERT INTO cart_items(bisko_id, product_id, quantity) VALUES (?, ?, ?)";
+    
     return new Promise((resolve, reject) => {
-        connection.query(query, [bisko_id, product_id, quantity], (error, results) => {
+        connection.query(selectQuery, [bisko_id, product_id], (error, results) => {
             if (error) {
-                reject(error);
-            } else {
-                resolve(results[0])
+                return reject(error);
             }
-        })
-    })
+
+            if (results.length > 0) {
+                reject({ message: "Product exist to cart"});
+            } else {
+                connection.query(insertQuery, [bisko_id, product_id, quantity], (error, results) => {
+                    if (error) {
+                        return reject(error);
+                    } else {
+                        resolve({ message: "Product added to cart", insertId: results.insertId });
+                    }
+                });
+            }
+        });
+    });
 }
+
 
 function getCartItemsByBiskoId(biskoId) {
     const query = `

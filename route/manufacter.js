@@ -10,5 +10,6 @@ router.get('/getManufacterNameById/:id', authMiddleware, checkRole('admin'),  Ma
 router.post('/createManufacterName', authMiddleware, checkRole('admin'),  ManufacterController.createManufacterName);
 router.delete('/deleteManufacterName/:id', authMiddleware, checkRole('admin'),  ManufacterController.deleteManufacterName);
 router.get('/getManufacterByCatId/:id',  ManufacterController.getManufacterByCatId);
-router.get('/getManufacterBySubCatId/:id', ManufacterController.getManufacterBySubCatId);
+router.get('/getManufacterBySubCatId/:id/:catId', ManufacterController.getManufacterBySubCatId);
+router.get('/getMaunufacterByItemCategory/:id/:slug', ManufacterController.getMaunufacterByItemCategory);
 module.exports = router;
