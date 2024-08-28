@@ -91,10 +91,28 @@ exports.getManufacterByCatId = async function (req, res) {
     }
 }
 
+
 exports.getManufacterBySubCatId = async function (req, res) {
-    const { id } = req.params;
+    const { id, catId } = req.params;
     try {
-        ManufacterModel.getManufacterBySubCatId(id)
+        ManufacterModel.getManufacterBySubCatId(id, catId)
+            .then((response) => {
+                res.json(response)
+            })
+            .catch((error) => {
+                console.log(error)
+                res.status(500).json({ message: "Error geting Manfucter" })
+            })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, msg: "Interna Server Error" })
+    }
+}
+
+exports.getMaunufacterByItemCategory = async function (req, res) {
+    const { id, slug } = req.params;
+    try {
+        ManufacterModel.getMaunufacterByItemCategory(id, slug)
             .then((response) => {
                 res.json(response)
             })

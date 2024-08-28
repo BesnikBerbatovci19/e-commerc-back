@@ -92,36 +92,68 @@ function getManufacterByCatId(cat_id) {
     })
 }
 
-function getManufacterBySubCatId(id) {
+function getManufacterBySubCatId(id, cat_id) {
     const query = `
-    SELECT
+    SELECT 
         m.id ,
         m.name,
         m.slug,
-        COUNT(p.id) AS product_count
-    FROM
+        COALESCE(COUNT(p.id), 0) AS product_count
+    FROM 
         manufacter m
-    LEFT JOIN
-        product p ON m.id = p.manufacter_id
-    WHERE
+    LEFT JOIN 
+        product p ON m.id = p.manufacter_id AND p.subcategory_id = ?
+    WHERE 
         m.category_id = ?
-    GROUP BY
+    GROUP BY 
         m.id, m.name
-    ORDER BY
+    ORDER BY 
         product_count DESC;
 `;
 
-return new Promise((resolve, reject) => {
-    connection.query(query, [cat_id], (error, results) => {
-        if (error) {
-            reject(error);
-        } else {
-            resolve(results)
-        }
+    return new Promise((resolve, reject) => {
+        connection.query(query, [ cat_id, id], (error, results) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(results)
+            }
+        })
     })
-})
 }
 
+
+function getMaunufacterByItemCategory(id, slug) {
+    const query = `
+    SELECT 
+        m.id ,
+        m.name,
+        m.slug,
+        COALESCE(COUNT(p.id), 0) AS product_count
+    FROM 
+        manufacter m
+    LEFT JOIN 
+        product p ON m.id = p.manufacter_id 
+                AND p.itemsubcategory_slug = ?
+    WHERE 
+        m.category_id = ?
+    GROUP BY 
+        m.id, m.name
+    ORDER BY 
+        product_count DESC;
+
+    `;
+
+    return new Promise((resolve, reject) => {
+        connection.query(query, [ slug, id], (error, results) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(results)
+            }
+        })
+    })
+}
 
 
 module.exports = {
@@ -130,5 +162,7 @@ module.exports = {
     createManufacterName,
     deleteManufacterName,
     getManufacterByCatId,
-    getManufacterBySubCatId
+    getManufacterBySubCatId,
+    getMaunufacterByItemCategory
+
 }

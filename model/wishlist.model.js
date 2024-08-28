@@ -20,20 +20,30 @@ function getProductInWishList(biskoId) {
     });
   }
 
-function createWishList(product_id, biskoId) {
-    const query = "INSERT INTO wishlist(product_id, bisko_Id) VALUES (?, ?)";
-
+  function createWishList(product_id, biskoId) {
+    const checkQuery = "SELECT * FROM wishlist WHERE product_id = ? AND bisko_Id = ?";
+    const insertQuery = "INSERT INTO wishlist(product_id, bisko_Id) VALUES (?, ?)";
 
     return new Promise((resolve, reject) => {
-        connection.query(query, [product_id, biskoId], (error, results) => {
-            if (error) {
-                reject(error);
-            } else {
-                resolve(results[0])
+        connection.query(checkQuery, [product_id, biskoId], (checkError, results) => {
+            if (checkError) {
+                return reject(checkError);
             }
-        })
-    })
+
+            if (results.length > 0) {
+                return reject(new Error("Wishlist already exists"));
+            }
+
+            connection.query(insertQuery, [product_id, biskoId], (insertError, insertResults) => {
+                if (insertError) {
+                    return reject(insertError);
+                }
+                resolve(insertResults);
+            });
+        });
+    });
 }
+
 
 function deleteFromWishlist(productId, biskoId) {
     const query = `DELETE FROM wishlist WHERE product_id = ${productId} AND bisko_Id = '${biskoId}'`;

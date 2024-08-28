@@ -172,26 +172,18 @@ exports.getProductUser = async function (req, res) {
 
 
 exports.getProductByCSV = async function (req, res) {
-    const workbook = xlsx.readFile('./file/optika_gacaferi_produktet.xlsx');
-    
-    // Get the first sheet in the workbook
+    const workbook = xlsx.readFile('./file/GjirafaMall-ExportProdukte.xlsx');
+
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
     
-    // Convert the sheet to JSON
     const data = xlsx.utils.sheet_to_json(sheet);
+    
+    // Process each row
     data.forEach((row) => {
         ProductModel.createProductByCsv(row);
     });
-    // fs.createReadStream('./file/optika_gacaferi_produktet.xlsx')
-    //     .pipe(csv())
-    //     .on('data', (data) => {
-    //         console.log(data)
-    //         // ProductModel.createProductByCsv(data)
-    //     })
-    //     .on('end', () => {
-    //         // You can now work with the data
-    //     });
+ 
 }
 
 
@@ -356,20 +348,21 @@ exports.getDiscountProcut = async function (req, res) {
 
 exports.getProductByCategory = async function (req, res) {
     try {
-        const { slug } = req.params
+        const { slug } = req.params;
         const queryParams = req.query;
+
         try {
-            const results = await ProductModel.searchByCategory(slug, queryParams);
-            res.json(results);
+            const { total, products } = await ProductModel.searchByCategory(slug, queryParams);
+            res.json({ total, products });
         } catch (error) {
-            console.log(error)
+            console.log(error);
             res.status(500).json({ error: error.message });
         }
     } catch (error) {
         console.log(error);
-        res.status(500).json({ success: false, msg: "Interna Server Error" })
+        res.status(500).json({ success: false, msg: "Internal Server Error" });
     }
-}
+};
 
 exports.countProductCategory = async function (req, res) {
     const { category_id } = req.params;
@@ -386,6 +379,29 @@ exports.countProductSubCategory = async function (req, res) {
     const { subcategory_id } = req.params;
     try {
         const results = await ProductModel.countProductSubCategory(subcategory_id);
+        res.json(results)
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, msg: "Interna Server Error" })
+    }
+}
+
+exports.searchProduct = async function (req, res) {
+    const searchQuery = req.query.q || '';
+    try {
+        const results = await ProductModel.searchProductLive(searchQuery);
+        res.json(results)
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, msg: "Interna Server Error" })
+    }
+}
+
+exports.getSearchGlobalPorduct = async function (req, res) {
+    const { slug } = req.query;
+    try {
+        const results = await ProductModel.searchProductLives(slug, req.query);
+        console.log(results)
         res.json(results)
     } catch (error) {
         console.log(error);

@@ -1,7 +1,24 @@
 const connection = require('../config/database');
 
 function getAllOrder() {
-    const query = 'SELECT * FROM orders'
+    const query = `
+    SELECT 
+        orders.id, 
+        orders.user_id, 
+        orders.total_price, 
+        orders.message, 
+        orders.paymentMethod, 
+        orders.status, 
+        orders.created_at,
+        user.name, 
+        user.surname, 
+        user.phone
+    FROM 
+        orders
+    JOIN 
+        user ON orders.user_id = user.id;
+
+    `
 
     return new Promise((resolve, reject) => {
         connection.query(query, (error, results) => {
