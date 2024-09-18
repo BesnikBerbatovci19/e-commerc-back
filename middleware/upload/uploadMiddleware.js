@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
 
+// Set up storage configuration
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'uploads/product');
@@ -38,34 +39,62 @@ const uploadMiddleware = (req, res, next) => {
                     continue;
                 }
 
-                const tempFilePath = `${file.path}-temp`;
+                // Paths for storing the files in separate folders
+                const mainDir = path.join(file.destination, 'main');
+                const thumbDir = path.join(file.destination, 'thumbnail');
+
+                // Create directories if they don't exist
+                if (!fs.existsSync(mainDir)) {
+                    fs.mkdirSync(mainDir, { recursive: true });
+                }
+                if (!fs.existsSync(thumbDir)) {
+                    fs.mkdirSync(thumbDir, { recursive: true });
+                }
+
+                // Use the same filename for both main and thumbnail, placed in their respective directories
+                const fileName = path.basename(file.filename);
+
+                // Set file paths for main and thumbnail images
+                const thumbFilePath = path.join(thumbDir, fileName);
+                const mainFilePath = path.join(mainDir, fileName);
 
                 try {
-                    const image = sharp(file.path)
-                        .resize(300, 200, {
-                            fit: sharp.fit.contain, 
-                            background: { r: 255, g: 255, b: 255, alpha: 1 } 
+                    // Generate thumbnail (250x250)
+                    const thumbImage = sharp(file.path)
+                        .resize(170, 170, {
+                            fit: sharp.fit.cover,
+                            background: { r: 255, g: 255, b: 255, alpha: 1 }
                         });
 
-                    // Set quality options based on file type
                     if (file.mimetype === 'image/jpeg') {
-                        image.jpeg({ quality: 90 }); // Adjust quality for JPEG
+                        thumbImage.jpeg({ quality: 90 });
                     } else if (file.mimetype === 'image/png') {
-                        image.png({ compressionLevel: 6 }); // Adjust compression for PNG
+                        thumbImage.png({ compressionLevel: 6 });
                     }
 
-                    await image.toFile(tempFilePath);
+                    await thumbImage.toFile(thumbFilePath);
 
-                    fs.renameSync(tempFilePath, file.path);
+                    // Generate main photo (600x600)
+                    const mainImage = sharp(file.path)
+                        .resize(600, 600, {
+                            fit: sharp.fit.cover,
+                            background: { r: 255, g: 255, b: 255, alpha: 1 }
+                        });
+
+                    if (file.mimetype === 'image/jpeg') {
+                        mainImage.jpeg({ quality: 90 });
+                    } else if (file.mimetype === 'image/png') {
+                        mainImage.png({ compressionLevel: 6 });
+                    }
+
+                    await mainImage.toFile(mainFilePath);
+
                 } catch (resizeError) {
-                    errors.push(`Failed to resize image: ${file.originalname}`);
-
-                    if (fs.existsSync(tempFilePath)) {
-                        fs.unlinkSync(tempFilePath);
-                    }
+                    errors.push(`Failed to process image: ${file.originalname}`);
                 }
             }
 
+            // If there are errors, delete the uploaded files
             if (errors.length > 0) {
                 files.forEach((file) => {
                     if (fs.existsSync(file.path)) {

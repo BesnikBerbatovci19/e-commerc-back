@@ -4,6 +4,7 @@ const fs = require('fs');
 const csv = require('csv-parser');
 const { validationAddProductInput } = require('../validation/product/product');
 const xlsx = require('xlsx');
+const path = require('path');
 exports.getProduct = async function (req, res) {
     try {
         ProductModel.getAllProduct()
@@ -65,7 +66,15 @@ exports.create = async function (req, res) {
 exports.update = async function (req, res) {
     const { id } = req.params;
 
-    const paths = req.files != undefined ? req.files.length > 0 ? req.files.map((file) => ({ id: uuidv4(), path: file.path })) : null : null;
+    const paths = req.files != undefined
+        ? req.files.length > 0
+            ? req.files.map((file) => ({
+                id: uuidv4(),
+                path: path.basename(file.path) 
+            }))
+            : null
+        : null;
+  
     try {
         ProductModel.updateProduct(id, req.body, paths)
             .then(() => {
@@ -176,14 +185,14 @@ exports.getProductByCSV = async function (req, res) {
 
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
-    
+
     const data = xlsx.utils.sheet_to_json(sheet);
-    
+
     // Process each row
-    data.forEach((row) => {
+    await data.forEach((row) => {
         ProductModel.createProductByCsv(row);
     });
- 
+    return res.json("ended")
 }
 
 

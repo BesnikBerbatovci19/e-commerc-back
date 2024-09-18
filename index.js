@@ -2,6 +2,7 @@ const express = require('express');
 const app = express();
 const cors = require("cors");
 const passport = require('passport');
+const path = require('path');
 
 const connection   = require('./config/database');
 
@@ -21,6 +22,7 @@ const specificationRoute = require('./route/specification');
 const wishlistRoute = require('./route/wishList');
 const cartItemsRoute = require('./route/cartItems');
 const discountRoute = require('./route/discount');
+const subscribeRoute = require("./route/subscribe");
 
 // middleware
 app.use(express.urlencoded({ extended: false }));
@@ -46,8 +48,7 @@ app.use((err, req, res, next) => {
 });
 
 
-app.use('/uploads', express.static('uploads'));
-
+app.use(express.static(path.join(__dirname)));
 
 app.use('/api/auth', authRoute);
 app.use('/api/category', categoryRoute);
@@ -62,6 +63,7 @@ app.use('/api/specification', specificationRoute);
 app.use('/api/wishlist', wishlistRoute);
 app.use('/api/cart', cartItemsRoute);
 app.use('/api/discount', discountRoute);
+app.use('/api/subscribe', subscribeRoute);
 
 const port = process.env.PORT || 5000;
 
