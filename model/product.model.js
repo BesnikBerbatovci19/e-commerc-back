@@ -150,12 +150,6 @@ function deletePhoto(id, idPhoto) {
 
   return new Promise((resolve, reject) => {
     connection.query(fetchQuery, [id], (error, results) => {
-      let remove = JSON.parse(results[0].path).find(
-        (item) => item.id == idPhoto
-      );
-      fs.unlink(remove.path, (err) => {
-        if (err) throw err;
-      });
       let photo = JSON.parse(results[0].path).filter(
         (item) => item.id != idPhoto
       );
@@ -322,12 +316,148 @@ function getProductUser(userId) {
     });
   });
 }
+
+async function createProductMeteron(data) {
+  const query =
+    "INSERT INTO product(category_id, category_slug, subcategory_id, subcategory_slug, itemsubcategory_id, itemsubcategory_slug, slug, name, description, price, status, inStock, path, discount, barcode, SKU) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+  const checkProductQuery =
+    "SELECT COUNT(*) AS count FROM product WHERE barcode = ? AND category_id = ? AND subcategory_id = ? AND itemsubcategory_id = ?";
+
+  const categoryMap = {
+    Orë: {
+      category_id: 10,
+      category_slug: "teknologji",
+      subcategory_id: 108,
+      subcategory_slug: "smart",
+      itemsubcategory_id: 115,
+      itemsubcategory_slug: "or-mats-aktiviteti",
+    },
+    Maus: {
+      category_id: 10,
+      category_slug: "teknologji",
+      subcategory_id: 109,
+      subcategory_slug: "aksesor",
+      itemsubcategory_id: 134,
+      itemsubcategory_slug: "maus",
+    },
+    Kufje: {
+      category_id: 10,
+      category_slug: "teknologji",
+      subcategory_id: 109,
+      subcategory_slug: "aksesor",
+      itemsubcategory_id: 136,
+      itemsubcategory_slug: "kufje-mikrofon",
+    },
+    Tastierë: {
+      category_id: 10,
+      category_slug: "teknologji",
+      subcategory_id: 109,
+      subcategory_slug: "aksesor",
+      itemsubcategory_id: 135,
+      itemsubcategory_slug: "tastier",
+    },
+  };
+
+  const itemSubcategoryMap = {};
+
+  let category_slug = null;
+  let category_id = null;
+  let subcategory_id = null;
+  let subcategory_slug = null;
+  let itemsubcategory_id = null;
+  let itemsubcategory_slug = null;
+
+  if (data.Name) {
+    const categories = data.Name.split(" ").map((item) => item.trim());
+
+    for (let category of categories) {
+      if (categoryMap[category]) {
+        category_id = categoryMap[category].category_id;
+        category_slug = categoryMap[category].category_slug;
+        subcategory_id = categoryMap[category].subcategory_id;
+        subcategory_slug = categoryMap[category].subcategory_slug;
+        itemsubcategory_id = categoryMap[category].itemsubcategory_id;
+        itemsubcategory_slug = categoryMap[category].itemsubcategory_slug;
+        const productExists = await new Promise((resolve, reject) => {
+          connection.query(
+            checkProductQuery,
+            [data.Gtin, category_id, subcategory_id, itemsubcategory_id],
+            (error, results) => {
+              if (error) {
+                reject(error);
+              } else {
+                resolve(results[0].count > 0);
+              }
+            }
+          );
+        });
+
+        if (productExists) {
+          return null;
+        }
+
+        const slug = generateSlugSubCategoryByName(data.Name);
+
+        let price = Math.round(data.Price);
+        let oldPrice = Math.round(data.OldPrice);
+        let discount = null;
+        if (oldPrice < price) {
+          oldPrice = data.Price;
+          discount = null;
+        } else if (price === oldPrice) {
+          oldPrice = data.Price;
+          discount = null;
+        } else if (oldPrice > price) {
+          oldPrice = data.OldPrice;
+          discount = data.Price;
+        }
+
+        // Insert product
+        if (oldPrice) {
+          await new Promise((resolve, reject) => {
+            connection.query(
+              query,
+              [
+                category_id,
+                category_slug,
+                subcategory_id,
+                subcategory_slug,
+                itemsubcategory_id,
+                itemsubcategory_slug,
+                slug,
+                data.Name,
+                JSON.stringify(data.ShortDescription),
+                oldPrice,
+                1,
+                10,
+                null,
+                discount,
+                data.Gtin,
+                data.SKU,
+              ],
+              (error, results) => {
+                if (error) {
+                  reject(error);
+                } else {
+                  resolve(results.insertId);
+                }
+              }
+            );
+          });
+        }
+        // Exit loop after successful insert
+        break;
+      }
+    }
+  }
+}
 async function createProductByCsv(data) {
   const query =
     "INSERT INTO product(category_id, category_slug, subcategory_id, subcategory_slug, itemsubcategory_id, itemsubcategory_slug, slug, name, description, price, status, inStock, path, discount, barcode, SKU) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-  const checkBarcodeQuery =
-    "SELECT COUNT(*) AS count FROM product WHERE barcode = ?";
+  const checkProductQuery =
+    "SELECT COUNT(*) AS count FROM product WHERE barcode = ? AND category_id = ? AND subcategory_id = ? AND itemsubcategory_id = ?";
 
   const categoryMap = {
     Buzë: {
@@ -400,13 +530,21 @@ async function createProductByCsv(data) {
       itemsubcategory_id: 22,
       itemsubcategory_slug: "modelim",
     },
-    "Banjë&Dush": {
+    "Banjë & Dush": {
       category_id: 11,
       category_slug: "kozmetike",
       subcategory_id: 63,
       subcategory_slug: "kujdesi-personal",
       itemsubcategory_id: 24,
       itemsubcategory_slug: "banje-dush",
+    },
+    "Deodorant & Antiperspirant": {
+      category_id: 11,
+      category_slug: "kozmetike",
+      subcategory_id: 63,
+      subcategory_slug: "kujdesi-personal",
+      itemsubcategory_id: 25,
+      itemsubcategory_slug: "deodorant-antiperspirant",
     },
   };
 
@@ -443,7 +581,6 @@ async function createProductByCsv(data) {
           const aromaType = categories.filter(
             (item) => item === "Për femra" || item === "Për meshkuj"
           );
-          console.log(aromaType);
           const itemSubcategory = itemSubcategoryMap[aromaType[0]];
 
           if (itemSubcategory) {
@@ -458,23 +595,25 @@ async function createProductByCsv(data) {
           itemsubcategory_slug = categoryMap[category].itemsubcategory_slug;
         }
 
-        // Check if product exists
         const productExists = await new Promise((resolve, reject) => {
-          connection.query(checkBarcodeQuery, [data.Gtin], (error, results) => {
-            if (error) {
-              reject(error);
-            } else {
-              resolve(results[0].count > 0);
+          connection.query(
+            checkProductQuery,
+            [data.Gtin, category_id, subcategory_id, itemsubcategory_id],
+            (error, results) => {
+              if (error) {
+                reject(error);
+              } else {
+                resolve(results[0].count > 0);
+              }
             }
-          });
+          );
         });
 
-        // Skip if product already exists
         if (productExists) {
-          console.log("Product already exists");
           return null;
         }
 
+        // Check for the next category if the product exists in this one
         const slug = generateSlugSubCategoryByName(data.Name);
 
         // Determine Price and Discount based on OldPrice and Price
@@ -482,15 +621,15 @@ async function createProductByCsv(data) {
         let oldPrice = Math.round(data.OldPrice);
         let discount = null;
 
-        if (price > oldPrice) {
-          oldPrice = data.price;
+        if (oldPrice < price) {
+          oldPrice = data.Price;
+          discount = null;
+        } else if (price === oldPrice) {
+          oldPrice = data.Price;
           discount = null;
         } else if (oldPrice > price) {
           oldPrice = data.OldPrice;
           discount = data.Price;
-        } else if (price === oldPrice) {
-          oldPrice = data.OldPrice;
-          discount = null;
         }
 
         // Insert product
@@ -1321,4 +1460,5 @@ module.exports = {
   countProductSubCategory,
   searchProductLive,
   searchProductLives,
+  createProductMeteron,
 };
