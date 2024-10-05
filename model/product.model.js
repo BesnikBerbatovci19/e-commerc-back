@@ -322,70 +322,214 @@ function getProductUser(userId) {
     });
   });
 }
-
 async function createProductByCsv(data) {
   const query =
     "INSERT INTO product(category_id, category_slug, subcategory_id, subcategory_slug, itemsubcategory_id, itemsubcategory_slug, slug, name, description, price, status, inStock, path, discount, barcode, SKU) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
   const checkBarcodeQuery =
     "SELECT COUNT(*) AS count FROM product WHERE barcode = ?";
+
+  const categoryMap = {
+    Buzë: {
+      category_id: 11,
+      category_slug: "kozmetikë",
+      subcategory_id: 60,
+      subcategory_slug: "grim",
+      itemsubcategory_id: 16,
+      itemsubcategory_slug: "buz",
+    },
+    Aroma: {
+      category_id: 11,
+      category_slug: "kozmetikë",
+      subcategory_id: 59,
+      subcategory_slug: "aroma",
+    },
+    Brushë: {
+      category_id: 11,
+      category_slug: "kozmetikë",
+      subcategory_id: 60,
+      subcategory_slug: "grim",
+      itemsubcategory_id: 15,
+      itemsubcategory_slug: "brusha-shpuza",
+    },
+    Balsam: {
+      category_id: 11,
+      category_slug: "kozmetikë",
+      subcategory_id: 62,
+      subcategory_slug: "kujdesi-pr-flok",
+      itemsubcategory_id: 20,
+      itemsubcategory_slug: "balsam",
+    },
+    "Kujdes për flokët": {
+      category_id: 11,
+      category_slug: "kozmetikë",
+      subcategory_id: 62,
+      subcategory_slug: "kujdesi-pr-flok",
+      itemsubcategory_id: 21,
+      itemsubcategory_slug: "mirmbajtje-t-flokve",
+    },
+    "Për fëmijë": {
+      category_id: 11,
+      category_slug: "kozmetikë",
+      subcategory_id: 59,
+      subcategory_slug: "aroma",
+      itemsubcategory_id: 13,
+      itemsubcategory_slug: "pr-fmij",
+    },
+    "Përkujdesje ndaj diellit": {
+      category_id: 11,
+      category_slug: "kozmetikë",
+      subcategory_id: 61,
+      subcategory_slug: "kujdesi-pr-lekur",
+      itemsubcategory_id: 18,
+      itemsubcategory_slug: "prkujdesje-ndaj-diellit",
+    },
+    "Kujdes personal": {
+      category_id: 11,
+      category_slug: "kozmetikë",
+      subcategory_id: 61,
+      subcategory_slug: "kujdesi-pr-lekur",
+      itemsubcategory_id: 18,
+      itemsubcategory_slug: "prkujdesje-ndaj-diellit",
+    },
+    Modelim: {
+      category_id: 11,
+      category_slug: "kozmetike",
+      subcategory_id: 62,
+      subcategory_slug: "kujdesi-per-flok",
+      itemsubcategory_id: 22,
+      itemsubcategory_slug: "modelim",
+    },
+    "Banjë&Dush": {
+      category_id: 11,
+      category_slug: "kozmetike",
+      subcategory_id: 63,
+      subcategory_slug: "kujdesi-personal",
+      itemsubcategory_id: 24,
+      itemsubcategory_slug: "banje-dush",
+    },
+  };
+
+  const itemSubcategoryMap = {
+    "Për femra": {
+      itemsubcategory_id: 98,
+      itemsubcategory_slug: "pr-femra",
+    },
+    "Për meshkuj": {
+      itemsubcategory_id: 99,
+      itemsubcategory_slug: "pr-meshkuj",
+    },
+  };
+
+  let category_slug = null;
+  let category_id = null;
+  let subcategory_id = null;
+  let subcategory_slug = null;
+  let itemsubcategory_id = null;
+  let itemsubcategory_slug = null;
+
   if (data.Categories) {
-    const category = data.Categories.split(";");
-    const subcat = data.Categories.split(";");
-    const itemsubcat = data.Categories.split(";");
-    let category_id = null;
-    let category_slug = null;
-    let subcategory_id = null;
-    let subcategory_slug = null;
-    let itemsubcategory_id = null;
-    let itemsubcategory_slug = null;
+    const categories = data.Categories.split(";").map((item) => item.trim());
 
-    if (itemsubcat.find((itemsub) => itemsub === "Përkujdesje ndaj diellit")) {
-      category_id = 11;
-      category_slug = "kozmetikë";
-      subcategory_id = 61;
-      subcategory_slug = "kujdesi-pr-lekur";
-      itemsubcategory_id = 18;
-      itemsubcategory_slug = "prkujdesje-ndaj-diellit";
-    }
+    for (let category of categories) {
+      if (categoryMap[category]) {
+        category_id = categoryMap[category].category_id;
+        category_slug = categoryMap[category].category_slug;
+        subcategory_id = categoryMap[category].subcategory_id;
+        subcategory_slug = categoryMap[category].subcategory_slug;
 
-    // if ( subcategory_id, subcategory_slug) {
-    //     console.log(category_id, category_slug, subcategory_id, subcategory_slug, itemsubcategory_id, itemsubcategory_slug)
-    // }
-    const slug = generateSlugSubCategoryByName(data.Name);
+        if (category === "Aroma") {
+          // console.log(categories);
+          const aromaType = categories.filter(
+            (item) => item === "Për femra" || item === "Për meshkuj"
+          );
+          console.log(aromaType);
+          const itemSubcategory = itemSubcategoryMap[aromaType[0]];
 
-    if (category_id && category_slug && subcategory_id && subcategory_slug) {
-      return new Promise((resolve, reject) => {
-        connection.query(
-          query,
-          [
-            category_id,
-            category_slug,
-            subcategory_id, // subcategory_id
-            subcategory_slug, // subcategory_slug
-            itemsubcategory_id,
-            itemsubcategory_slug,
-            slug, // slug (generated)
-            data.Name, // name
-            JSON.stringify(data.FullDescription), // description
-            data.OldPrice, // price
-            1, // status
-            data.StoreStockQuantity, // inStock
-            "", // path (assuming data.image is the correct path)
-            data.Price < data.OldPrice ? data.Price : null, // discount (use data.warranty or null if not present)
-            data.Gtin, // barcode (pass null if not provided)
-            data.Gtin, // SKU
-          ],
-          (error, results) => {
+          if (itemSubcategory) {
+            itemsubcategory_id = itemSubcategory.itemsubcategory_id;
+            itemsubcategory_slug = itemSubcategory.itemsubcategory_slug;
+          } else {
+            console.log("Invalid Aroma type");
+            return null;
+          }
+        } else {
+          itemsubcategory_id = categoryMap[category].itemsubcategory_id;
+          itemsubcategory_slug = categoryMap[category].itemsubcategory_slug;
+        }
+
+        // Check if product exists
+        const productExists = await new Promise((resolve, reject) => {
+          connection.query(checkBarcodeQuery, [data.Gtin], (error, results) => {
             if (error) {
               reject(error);
             } else {
-              resolve(results[0]);
+              resolve(results[0].count > 0);
             }
-          }
-        );
-      });
+          });
+        });
+
+        // Skip if product already exists
+        if (productExists) {
+          console.log("Product already exists");
+          return null;
+        }
+
+        const slug = generateSlugSubCategoryByName(data.Name);
+
+        // Determine Price and Discount based on OldPrice and Price
+        let price = Math.round(data.Price);
+        let oldPrice = Math.round(data.OldPrice);
+        let discount = null;
+
+        if (price > oldPrice) {
+          oldPrice = data.price;
+          discount = null;
+        } else if (oldPrice > price) {
+          oldPrice = data.OldPrice;
+          discount = data.Price;
+        } else if (price === oldPrice) {
+          oldPrice = data.OldPrice;
+          discount = null;
+        }
+
+        // Insert product
+        if (oldPrice) {
+          await new Promise((resolve, reject) => {
+            connection.query(
+              query,
+              [
+                category_id,
+                category_slug,
+                subcategory_id,
+                subcategory_slug,
+                itemsubcategory_id,
+                itemsubcategory_slug,
+                slug,
+                data.Name,
+                JSON.stringify(data.FullDescription),
+                oldPrice,
+                1,
+                data.StoreStockQuantity,
+                null,
+                discount,
+                data.Gtin,
+                data.Gtin,
+              ],
+              (error, results) => {
+                if (error) {
+                  reject(error);
+                } else {
+                  resolve(results.insertId);
+                }
+              }
+            );
+          });
+        }
+        // Exit loop after successful insert
+        break;
+      }
     }
-    return;
   }
 }
 
@@ -659,7 +803,7 @@ function searchByCategory(slug, data) {
 function searchQuery(slug, data) {
   let baseQuery = `FROM product WHERE subcategory_slug = ? AND subcategory_id = ?`;
   const queryParams = [slug, data.subCatId];
-
+  console.log(data.subCatId);
   if (data.inStock !== undefined) {
     baseQuery += ` AND inStock = ?`;
     queryParams.push(data.inStock);
@@ -712,7 +856,6 @@ function searchQuery(slug, data) {
   const offset = (page - 1) * limit;
   const fetchQuery = `SELECT * ${baseQuery} ORDER BY inStock DESC, id DESC LIMIT ? OFFSET ?`;
   const fetchQueryParams = [...queryParams, limit, offset];
-
   return new Promise((resolve, reject) => {
     connection.query(countQuery, queryParams, (countError, countResults) => {
       if (countError) {
@@ -726,7 +869,6 @@ function searchQuery(slug, data) {
           if (fetchError) {
             return reject(fetchError);
           }
-
           resolve({
             total: countResults[0].total,
             products: fetchResults,
