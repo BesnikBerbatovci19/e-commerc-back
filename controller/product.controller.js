@@ -346,14 +346,14 @@ exports.getDiscountProcut = async function (req, res) {
   try {
     const queryParams = req.query;
     try {
-      const results = await ProductModel.searchDiscountQuery(queryParams);
-      res.json(results);
-    } catch (error) {
+      const { total, products } = await ProductModel.searchDiscountQuery(queryParams);
+      res.json({ total, products });
+      } catch (error) {
       res.status(500).json({ error: error.message });
     }
   } catch (error) {
     console.log(error);
-    res.status(500).json({ success: false, msg: "Interna Server Error" });
+    res.status(500).json({ success: false, msg: "Internal Server Error" });
   }
 };
 

@@ -846,17 +846,34 @@ function searchDiscountQuery(data) {
   }
 
   query += ` ORDER BY inStock DESC, id DESC `;
+  const countQuery = `SELECT COUNT(*) as total FROM product WHERE discount IS NOT NULL`;
+  const limit = parseInt(data.limit, 10) || 10;
+  const offset = (parseInt(data.page, 10) - 1) * limit || 0;
+  const fetchQuery = `SELECT * FROM product WHERE discount IS NOT NULL ORDER BY inStock DESC, id DESC LIMIT ? OFFSET ?`;
+  const fetchQueryParams = [...queryParams, limit, offset];
 
   return new Promise((resolve, reject) => {
-    connection.query(query, queryParams, (error, results) => {
-      if (error) {
-        reject(error);
-      } else {
-        resolve(results);
-      }
-    });
-  });
-}
+        connection.query(countQuery, queryParams, (countError, countResults) => {
+          if (countError) {
+            return reject(countError);
+          }
+     
+          connection.query(
+            fetchQuery,
+            fetchQueryParams,
+            (fetchError, fetchResults) => {
+              if (fetchError) {
+                return reject(fetchError);
+              }
+              resolve({
+                total: countResults[0].total,
+                products: fetchResults,
+              });
+            }
+          );
+        });
+      });
+    }
 
 function searchByCategory(slug, data) {
   let baseQuery = `FROM product WHERE category_slug = ?`;
