@@ -803,7 +803,32 @@ const downloadAndResizeImage = async (imageUrl, outputDir, width, height) => {
     return null;
   }
 };
+function getAllByCategory(slug) {
+  const baseQuery = `FROM product WHERE category_slug = ?`;
+  const queryParams = [slug];
 
+  const countQuery = `SELECT COUNT(*) as total ${baseQuery}`;
+  const fetchQuery = `SELECT * ${baseQuery} ORDER BY inStock DESC, id DESC`;
+
+  return new Promise((resolve, reject) => {
+    connection.query(countQuery, queryParams, (countError, countResults) => {
+      if (countError) {
+        return reject(countError);
+      }
+
+      connection.query(fetchQuery, queryParams, (fetchError, fetchResults) => {
+        if (fetchError) {
+          return reject(fetchError);
+        }
+
+        resolve({
+          total: countResults[0].total,
+          products: fetchResults,
+        });
+      });
+    });
+  });
+}
 function searchDiscountQuery(data) {
   let query = `SELECT * FROM product WHERE discount IS NOT NULL`;
   const queryParams = [];
@@ -865,9 +890,11 @@ function searchDiscountQuery(data) {
               if (fetchError) {
                 return reject(fetchError);
               }
+              console.log('fetchResults',fetchResults)
+
               resolve({
-                total: countResults[0].total,
-                products: fetchResults,
+                totalasdasdas: countResults[0].total,
+                prodasdasducts: fetchResults,
               });
             }
           );
@@ -1478,4 +1505,5 @@ module.exports = {
   searchProductLive,
   searchProductLives,
   createProductMeteron,
+  getAllByCategory
 };

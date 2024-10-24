@@ -7,6 +7,6 @@ const DiscountController = require('../controller/discount.controller');
 router.post('/createDiscount', authMiddleware, checkRole('admin'), DiscountController.createDiscount);
 router.get('/getAllDiscount', authMiddleware, checkRole('admin'), DiscountController.getAllDiscount);
 router.delete('/deleteDiscount/:id', authMiddleware, checkRole('admin'), DiscountController.deleteDiscount);
-
+router.post('/discountedProducts', DiscountController.discountedProducts);
 module.exports = router;
 

@@ -377,6 +377,21 @@ exports.getProductByCategory = async function (req, res) {
     res.status(500).json({ success: false, msg: "Internal Server Error" });
   }
 };
+exports.getAllProductsByCategoryId = async function (req, res) {
+  try {
+    const { slug } = req.params;
+    try {
+      const { total, products } = await ProductModel.getAllByCategory(slug);
+      res.json({ total, products });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ error: error.message });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, msg: "Internal Server Error" });
+  }
+};
 
 exports.countProductCategory = async function (req, res) {
   const { category_id } = req.params;
