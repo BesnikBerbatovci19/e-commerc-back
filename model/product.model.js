@@ -3,6 +3,7 @@ const fs = require("fs");
 const axios = require("axios");
 const path = require("path");
 const sharp = require("sharp");
+const { v4: uuidv4 } = require("uuid");
 const { generateSlugSubCategoryByName } = require("../utils/generateSlug");
 function getAllProduct() {
   const query = "SELECT * FROM product ORDER BY id DESC";
@@ -412,10 +413,15 @@ async function createProductMeteron(data) {
           oldPrice = data.OldPrice;
           discount = data.Price;
         }
-
+        const paths = await downloadAndResizeImage(
+          data.Gtin,
+          "uploads/prodcut",
+          data.Gtin
+        );
         // Insert product
         if (oldPrice) {
           await new Promise((resolve, reject) => {
+            const path = paths ? [{ id: uuidv4(), path: data.Gtin }] : null;
             connection.query(
               query,
               [
@@ -431,7 +437,7 @@ async function createProductMeteron(data) {
                 oldPrice,
                 1,
                 10,
-                null,
+                JSON.stringify(path),
                 discount,
                 data.Gtin,
                 data.SKU,
@@ -613,10 +619,14 @@ async function createProductByCsv(data) {
           return null;
         }
 
-        // Check for the next category if the product exists in this one
+        const path = await downloadAndResizeImage(
+          data.Gtin,
+          "uploads/product",
+          data.Gtin
+        );
+
         const slug = generateSlugSubCategoryByName(data.Name);
 
-        // Determine Price and Discount based on OldPrice and Price
         let price = Math.round(data.Price);
         let oldPrice = Math.round(data.OldPrice);
         let discount = null;
@@ -633,7 +643,8 @@ async function createProductByCsv(data) {
         }
 
         // Insert product
-        if (oldPrice) {
+        if (oldPrice && path) {
+          const paths = [{ id: uuidv4(), path: path.newFileName }];
           await new Promise((resolve, reject) => {
             connection.query(
               query,
@@ -650,7 +661,7 @@ async function createProductByCsv(data) {
                 oldPrice,
                 1,
                 data.StoreStockQuantity,
-                null,
+                JSON.stringify(paths),
                 discount,
                 data.Gtin,
                 data.Gtin,
@@ -672,134 +683,85 @@ async function createProductByCsv(data) {
   }
 }
 
-// async function createProductByCsv(data) {
-//     const outputDir = 'uploads/product';
-//     const query = "INSERT INTO product(category_id, category_slug, subcategory_id, subcategory_slug, itemsubcategory_id, itemsubcategory_slug, slug, name, description, price, status, inStock, path, discount, barcode, SKU) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-//     const checkBarcodeQuery = "SELECT COUNT(*) AS count FROM product WHERE barcode = ?";
-//     const cat = data.Categories.split(';')[0];
-//     const sub = data.Categories.split(';')[1];
-//     const itemSub = data.Categories.split(';')[2];
-//     let category_id = null;
-//     let category_slug = null;
-//     let subcategory_id = null;
-//     let subcategory_slug = null;
-//     let itemsubcategory_id = null;
-//     let itemsubcategory_slug = null;
-//     if (cat === "Aksesorë" && data.Foto !== 0 && data.StoreStockQuantity !== 0) {
-//         if (
-//             !(cat === "Aksesorë" && (
-//                 (sub === "Femra" && itemSub === "Syze") ||
-//                 (sub === "Meshkuj" && itemSub === "Syze") ||
-//                 (sub === "Për të dy gjinitë" && itemSub === "Syze")
-//             ))
-//         ) {
-//             return null;
-//         }
-//         if (sub === "Femra" && itemSub === "Syze") {
-//             category_id = 13;
-//             category_slug = "aksesorë";
-//             subcategory_id = 69;
-//             subcategory_slug = "femra";
-//             itemsubcategory_id = 37;
-//             itemsubcategory_slug = "syza";
-//         } else if (sub === "Meshkuj" && itemSub === "Syze") {
-//             category_id = 13;
-//             category_slug = "aksesorë";
-//             subcategory_id = 70;
-//             subcategory_slug = "meshkuj";
-//             itemsubcategory_id = 40;
-//             itemsubcategory_slug = "syza";
-//         } else if (sub === "Për të dy gjinitë" && itemSub === "Syze") {
-//             category_id = 13;
-//             category_slug = "aksesorë";
-//             subcategory_id = 71;
-//             subcategory_slug = "meshkuj";
-//             itemsubcategory_id = 43;
-//             itemsubcategory_slug = "syza";
-//         }
+const findPhotoByName = (directory, baseName) => {
+  const allowedExtensions = [".jpg", ".jpeg", ".png", ".svg", ".webp"];
 
-//         const slug = generateSlugSubCategoryByName(data.Name);
-//         const productExists = await new Promise((resolve, reject) => {
-//             connection.query(checkBarcodeQuery, [data.Gtin], (error, results) => {
-//                 if (error) {
-//                     reject(error);
-//                 } else {
-//                     resolve(results[0].count > 0);
-//                 }
-//             });
-//         });
-
-//         if (productExists) {
-//             return null;
-//         }
-
-//         const pathPhoto = await downloadAndResizeImage(data.Foto, outputDir, 300, 200)
-//         if (pathPhoto) {
-//             const paths = [{ id: uuidv4(), path: pathPhoto }];
-//             return new Promise((resolve, reject) => {
-//                 connection.query(query, [
-//                     category_id,
-//                     category_slug,
-//                     subcategory_id,        // subcategory_id
-//                     subcategory_slug,      // subcategory_slug
-//                     itemsubcategory_id,
-//                     itemsubcategory_slug,
-//                     slug,                  // slug (generated)
-//                     data.Name,             // name
-//                     JSON.stringify(data.FullDescription), // description
-//                     Math.round(data.OldPrice),            // price
-//                     1,                     // status
-//                     data.StoreStockQuantity, // inStock
-//                     JSON.stringify(paths),            // path (assuming data.image is the correct path)
-//                     Math.round(data.Price), // discount (use data.warranty or null if not present)
-//                     data.Gtin,                  // barcode (pass null if not provided)
-//                     data.Gtin               // SKU
-//                 ], (error, results) => {
-//                     if (error) {
-//                         reject(error);
-//                     } else {
-//                         resolve(results[0]);
-//                     }
-//                 });
-//             });
-//         }
-
-//     }
-
-// }
-const downloadAndResizeImage = async (imageUrl, outputDir, width, height) => {
   try {
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
+    const files = fs.readdirSync(directory);
+
+    for (const file of files) {
+      const fileBaseName = path.basename(file, path.extname(file));
+      const fileExt = path.extname(file);
+
+      if (
+        fileBaseName === baseName &&
+        allowedExtensions.includes(fileExt.toLowerCase())
+      ) {
+        return path.join(directory, file);
+      }
     }
 
-    const fileName = `${Date.now()}-${path.basename(imageUrl.split("?")[0])}`; // Remove query parameters
-    const filePath = path.join(outputDir, fileName);
+    return null;
+  } catch (err) {
+    console.error("Error reading directory:", err.message);
+    return null;
+  }
+};
 
-    const response = await axios({
-      url: imageUrl,
-      method: "GET",
-      responseType: "arraybuffer",
-    });
+const downloadAndResizeImage = async (fileName, outputDir, gtin) => {
+  try {
+    const ecomBackPath = path.resolve(__dirname, "..");
+    const fototPath = path.join(ecomBackPath, "Fotot");
 
-    const contentType = response.headers["content-type"];
-    if (!contentType.startsWith("image/")) {
-      return null;
+    const photoPath = findPhotoByName(fototPath, fileName);
+
+    if (!fs.existsSync(photoPath)) {
+      throw new Error("Image not found");
     }
+
+    const ext = path.extname(photoPath);
+    const newFileName = `${gtin}${ext}`;
+
+    const mainDir = path.join(outputDir, "main");
+    const thumbDir = path.join(outputDir, "thumbnail");
+
+    if (!fs.existsSync(mainDir)) {
+      fs.mkdirSync(mainDir, { recursive: true });
+    }
+    if (!fs.existsSync(thumbDir)) {
+      fs.mkdirSync(thumbDir, { recursive: true });
+    }
+
+    const mainFilePath = path.join(mainDir, newFileName);
+    const thumbFilePath = path.join(thumbDir, newFileName);
+
+    const imageBuffer = fs.readFileSync(photoPath);
 
     try {
-      await sharp(response.data)
-        .resize(width, height, {
+      await sharp(imageBuffer)
+        .resize(600, 600, {
           fit: sharp.fit.contain,
           background: { r: 255, g: 255, b: 255, alpha: 1 },
         })
-        .toFile(filePath);
+        .toFile(mainFilePath);
 
-      return filePath;
+      await sharp(imageBuffer)
+        .resize(170, 170, {
+          fit: sharp.fit.cover,
+          background: { r: 255, g: 255, b: 255, alpha: 1 },
+        })
+        .toFile(thumbFilePath);
+
+      return {
+        mainFilePath,
+        thumbFilePath,
+        newFileName,
+      };
     } catch (sharpError) {
-      return null;
+      throw new Error("Error resizing image: " + sharpError.message);
     }
   } catch (error) {
+    console.error("Error processing the image:", error.message);
     return null;
   }
 };
@@ -986,7 +948,7 @@ function searchByCategory(slug, data) {
 function searchQuery(slug, data) {
   let baseQuery = `FROM product WHERE subcategory_slug = ? AND subcategory_id = ?`;
   const queryParams = [slug, data.subCatId];
-  console.log(data.subCatId);
+
   if (data.inStock !== undefined) {
     baseQuery += ` AND inStock = ?`;
     queryParams.push(data.inStock);
@@ -1065,12 +1027,13 @@ function searchQuery(slug, data) {
 function searchQueryItemProduct(slug, data) {
   let baseQuery = `FROM product WHERE itemsubcategory_slug = ? AND subcategory_id = ?`;
   const queryParams = [slug, data.subCatId];
+
   if (data.inStock !== undefined) {
     baseQuery += ` AND inStock = ?`;
     queryParams.push(data.inStock);
   }
 
-  if (data.discount === "true") {
+  if (data.offers === "true") {
     baseQuery += ` AND discount IS NOT NULL`;
   }
 
@@ -1099,13 +1062,14 @@ function searchQueryItemProduct(slug, data) {
     baseQuery += ` AND price <= ?`;
     queryParams.push(data.priceTo);
   }
+
   if (data.removeSold === "true") {
     baseQuery += ` AND inStock > 0`;
   }
 
   if (data.manufacter && data.manufacter.length > 0) {
     const placeholders = data.manufacter.map(() => "?").join(",");
-    baseQuery += ` AND manufacter_id  IN (${placeholders})`;
+    baseQuery += ` AND manufacter_id IN (${placeholders})`;
     queryParams.push(...data.manufacter);
   }
 
