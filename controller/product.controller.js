@@ -177,8 +177,8 @@ exports.getProductUser = async function (req, res) {
 
 exports.getProductByCSV = async function (req, res) {
   try {
-    const workbook = xlsx.readFile("./file/meteron.xlsx");
-    // const workbook = xlsx.readFile("./file/product1.xlsx");
+    // const workbook = xlsx.readFile("./file/meteron.xlsx");
+    const workbook = xlsx.readFile("./file/product1.xlsx");
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
 
@@ -186,8 +186,8 @@ exports.getProductByCSV = async function (req, res) {
 
     // Use Promise.all or a for...of loop for proper async handling
     for (const row of data) {
-      await ProductModel.createProductMeteron(row);
-      // await ProductModel.createProductByCsv(row);
+      // await ProductModel.createProductMeteron(row);
+      await ProductModel.createProductByCsv(row);
     }
 
     return res.json("Processing complete");
