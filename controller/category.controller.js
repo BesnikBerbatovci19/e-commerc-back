@@ -3,15 +3,15 @@ const CategoryModel = require('../model/category.model');
 const { validationCategoryInput } = require('../validation/category/category');
 
 exports.getCategory = async function(req, res) {
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const page = parseInt(req.query.page, 10) || 1;
+    const searchTerm = req.query.search || '';
     try {
-        CategoryModel.getAllCategory()
-            .then((cat) => {
-                res.json(cat)
-            })
-            .catch((error) => {
-                console.error("Error get category :", error)
-                res.status(500).json({ message: "Error get category" })
-            })
+        const {total, categories} = await CategoryModel.getAllCategory(  limit,
+            (page - 1) * limit,
+            searchTerm)
+    
+            res.json({ total, categories });
     } catch (error) {
         console.log(error);
         res.status(500).json({ success: false, msg: "Interna Server Error" })

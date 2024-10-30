@@ -5,19 +5,23 @@ const csv = require("csv-parser");
 const { validationAddProductInput } = require("../validation/product/product");
 const xlsx = require("xlsx");
 const path = require("path");
+
 exports.getProduct = async function (req, res) {
+  const limit = parseInt(req.query.limit, 10) || 10;
+  const page = parseInt(req.query.page, 10) || 1;
+  const searchTerm = req.query.search || '';
+
   try {
-    ProductModel.getAllProduct()
-      .then((product) => {
-        res.json(product);
-      })
-      .catch((error) => {
-        console.error("Error get products :", error);
-        res.status(500).json({ message: "Error get products" });
-      });
+    const { total, products } = await ProductModel.getProductsWithSpecification(
+      limit,
+      (page - 1) * limit,
+      searchTerm
+    );
+
+    res.json({ total, products });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ success: false, msg: "Interna Server Error" });
+    res.status(500).json({ success: false, msg: "Internal Server Error" });
   }
 };
 

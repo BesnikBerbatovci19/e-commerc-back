@@ -7,22 +7,24 @@ const { validationRegisterInput, validationLoginInput } = require('../validation
 require('dotenv').config();
 
 
-
 exports.getUser = async function (req, res) {
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const page = parseInt(req.query.page, 10) || 1;
+    const searchTerm = req.query.search || '';
     try {
-        UserModel.getAllUser()
-            .then((users) => {
-                res.json(users)
-            })
-            .catch((error) => {
-                console.error("Error get user:", error)
-                res.status(500).json({ message: "Error get user" })
-            })
+        const { total, users } = await UserModel.getAllUser(
+            limit,
+            (page - 1) * limit,
+            searchTerm
+        );
+
+        res.json({ total, users });
+
     } catch (error) {
         console.log(error);
-        res.status(500).json({ success: false, msg: "Interna Server Error" })
+        res.status(500).json({ success: false, msg: "Internal Server Error" });
     }
-}
+};
 
 exports.getUserById = async function(req, res) {
     const { id } = req.params

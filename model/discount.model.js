@@ -2,17 +2,42 @@ const connection = require('../config/database');
 const moment = require('moment');
 
 
-function getAllDiscount() {
-    const query = "SELECT * FROM discounts";
+function getAllDiscount(limit, offset = 0, searchTerm = '') {
+    const searchCondition = searchTerm ? `WHERE code LIKE ?` : '';
+    const queryParams = searchTerm ? [`%${searchTerm}%`] : [];
 
+
+    const countQuery = `
+    SELECT COUNT(*) AS total
+    FROM discounts
+    ${searchCondition}
+`;
+    const fetchQuery = `
+SELECT * 
+FROM discounts
+${searchCondition}
+ORDER BY id DESC
+LIMIT ? OFFSET ?;
+`;
+    const fetchQueryParams = [...queryParams, limit, offset];
 
     return new Promise((resolve, reject) => {
-        connection.query(query, (error, results) => {
-            if (error) {
-                reject(error);
-            } else {
-                resolve(results);
+        connection.query(countQuery, queryParams, (countError, countResults) => {
+            if (countError) {
+                return reject(countError);
             }
+            const total = countResults[0].total;
+
+            connection.query(fetchQuery, fetchQueryParams, (fetchError, fetchResults) => {
+                if (fetchError) {
+                    return reject(fetchError);
+                }
+              
+                resolve({
+                    total,
+                    cupons: fetchResults,
+                });
+            });
         });
     });
 }

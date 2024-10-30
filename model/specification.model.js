@@ -1,30 +1,55 @@
 const connection = require('../config/database');
 
 
-function getSpecification() {
-    const query = `
-        SELECT 
-            s.id AS specification_id, 
-            s.name AS specification_name, 
-            s.category_id, 
-            s.created_at,
-            s.is_show_in_filter,
-            c.id AS category_id, 
-            c.name AS category_name, 
-            c.description AS category_description 
-        FROM specification s 
-        JOIN category c ON 
-        s.category_id = c.id`
+function getSpecification(limit, offset = 0, searchTerm = '') {
+    const searchCondition = searchTerm ? `WHERE s.name LIKE ?` : '';
+    const queryParams = searchTerm ? [`%${searchTerm}%`] : [];
+ 
+
+    const countQuery = `
+    SELECT COUNT(*) AS total
+    FROM specification
+    
+`;
+const fetchQuery = `
+SELECT 
+    s.id, 
+    s.name, 
+    s.category_id, 
+    s.created_at,
+    s.is_show_in_filter,
+    c.id AS category_id, 
+    c.name AS category_name, 
+    c.description AS category_description 
+FROM 
+    specification s
+JOIN 
+    category c ON s.category_id = c.id
+${searchCondition}
+ORDER BY 
+    s.id DESC
+LIMIT ? OFFSET ?;
+`;
+    const fetchQueryParams = [...queryParams, limit, offset];
 
     return new Promise((resolve, reject) => {
-        connection.query(query, (error, results) => {
-            if (error) {
-                reject(error);
-            } else {
-                resolve(results)
+        connection.query(countQuery, queryParams, (countError, countResults) => {
+            if (countError) {
+                return reject(countError);
             }
-        })
-    })
+            const total = countResults[0].total;
+
+            connection.query(fetchQuery, fetchQueryParams, (fetchError, fetchResults) => {
+                if (fetchError) {
+                    return reject(fetchError);
+                }
+                resolve({
+                    total,
+                    specifications: fetchResults,
+                });
+            });
+        });
+    });
 }
 
 function createSpecification(name, category_id) {

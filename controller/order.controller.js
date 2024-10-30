@@ -2,13 +2,15 @@ const OrderModel = require('../model/order.model');
 const { validationOrderInput } = require('../validation/order/order');
 
 exports.getAllOrder = async function (req, res) {
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const page = parseInt(req.query.page, 10) || 1;
+    const searchTerm = req.query.search || '';
     try {
-        OrderModel.getAllOrder()
-            .then((orders) => res.json(orders))
-            .catch((error => {
-                console.error("Error get orders :", error)
-                res.status(500).json({ message: "Error get orders" })
-            }))
+        const {total, orders} = await OrderModel.getAllOrder(limit,
+            (page - 1) * limit,
+            searchTerm)
+
+        res.json({ total, orders });
     } catch (error) {
         console.log(error);
         res.status(500).json({ success: false, msg: "Interna Server Error" })
