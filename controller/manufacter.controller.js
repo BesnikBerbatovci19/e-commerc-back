@@ -4,11 +4,13 @@ exports.getManufacterName = async function (req, res) {
     const limit = parseInt(req.query.limit, 10) || 10;
     const page = parseInt(req.query.page, 10) || 1;
     const searchTerm = req.query.search || '';
+    const all = req.query.all === 'true';
     try {
         const {total, manufacters} = await ManufacterModel.getManufacterName(
             limit,
             (page - 1) * limit,
-            searchTerm
+            searchTerm,
+            all
         )
 
         res.json({ total, manufacters });
