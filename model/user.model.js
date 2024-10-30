@@ -1,19 +1,44 @@
 const connection = require('../config/database');
 const bcrypt = require('bcrypt');
 
-function getAllUser() {
-    const query = 'SELECT * FROM user';
-    return new Promise((resolve, reject) => {
-        connection.query(query, (error, results) => {
-            if (error) {
-                reject(error);
-            } else {
-                resolve(results)
-            }
-        })
-    })
-}
+function getAllUser(limit, offset = 0, searchTerm = '') {
+    const searchCondition = searchTerm ? `WHERE name LIKE ? OR surname LIKE ?` : '';
+    const queryParams = searchTerm ? [`%${searchTerm}%`, `%${searchTerm}%`] : [];
 
+    const countQuery = `
+        SELECT COUNT(*) AS total
+        FROM user
+        ${searchCondition}
+    `;
+
+    const fetchQuery = `
+        SELECT * 
+        FROM user
+        ${searchCondition}
+        ORDER BY id DESC
+        LIMIT ? OFFSET ?;
+    `;
+    const fetchQueryParams = [...queryParams, limit, offset];
+
+    return new Promise((resolve, reject) => {
+        connection.query(countQuery, queryParams, (countError, countResults) => {
+            if (countError) {
+                return reject(countError);
+            }
+            const total = countResults[0].total;
+
+            connection.query(fetchQuery, fetchQueryParams, (fetchError, fetchResults) => {
+                if (fetchError) {
+                    return reject(fetchError);
+                }
+                resolve({
+                    total,
+                    users: fetchResults,
+                });
+            });
+        });
+    });
+}
 function findUserById(id) {
     const query = 'SELECT * FROM user where id = ?';
 

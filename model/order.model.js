@@ -1,34 +1,56 @@
 const connection = require('../config/database');
 
-function getAllOrder() {
-    const query = `
-    SELECT 
-        orders.id, 
-        orders.user_id, 
-        orders.total_price, 
-        orders.message, 
-        orders.paymentMethod, 
-        orders.status, 
-        orders.created_at,
-        user.name, 
-        user.surname, 
-        user.phone
-    FROM 
-        orders
-    JOIN 
-        user ON orders.user_id = user.id;
+function getAllOrder(limit, offset = 0, searchTerm = '') {
+    const searchCondition = searchTerm ? `WHERE user_id LIKE ?` : '';
+    const queryParams = searchTerm ? [`%${searchTerm}%`] : [];
+    const countQuery = `
+    SELECT COUNT(*) AS total
+    FROM orders
+    ${searchCondition}
+`;
+const fetchQuery = `
+SELECT 
+    orders.id, 
+    orders.user_id, 
+    orders.total_price, 
+    orders.message, 
+    orders.paymentMethod, 
+    orders.status, 
+    orders.created_at,
+    user.name, 
+    user.surname, 
+    user.phone
+FROM 
+    orders
+JOIN 
+    user ON orders.user_id = user.id
+${searchCondition}
+ORDER BY 
+    orders.id DESC
+LIMIT ? OFFSET ?;
+`;
 
-    `
+    const fetchQueryParams = [...queryParams, limit, offset];
 
     return new Promise((resolve, reject) => {
-        connection.query(query, (error, results) => {
-            if (error) {
-                reject(error);
-            } else {
-                resolve(results)
+        connection.query(countQuery, queryParams, (countError, countResults) => {
+            if (countError) {
+                return reject(countError);
             }
-        })
-    })
+            const total = countResults[0].total;
+
+            connection.query(fetchQuery, fetchQueryParams, (fetchError, fetchResults) => {
+                if (fetchError) {
+                    return reject(fetchError);
+                }
+               
+                resolve({
+                    total,
+                    orders: fetchResults,
+                });
+            });
+        });
+    });
 }
 
 

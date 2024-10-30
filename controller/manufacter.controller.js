@@ -1,15 +1,17 @@
 const ManufacterModel = require('../model/manufacter.model');
 
 exports.getManufacterName = async function (req, res) {
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const page = parseInt(req.query.page, 10) || 1;
+    const searchTerm = req.query.search || '';
     try {
-        ManufacterModel.getManufacterName()
-            .then((response) => {
-                res.json(response);
-            })
-            .catch((error) => {
-                console.error("Error get manufacter:", error)
-                res.status(500).json({ message: "Error get manufacter" })
-            })
+        const {total, manufacters} = await ManufacterModel.getManufacterName(
+            limit,
+            (page - 1) * limit,
+            searchTerm
+        )
+
+        res.json({ total, manufacters });
     } catch (error) {
         console.error("Error get manufacter :", error)
         res.status(500).json({ message: "Error get manufacter" })

@@ -2,13 +2,15 @@ const SpecificationModel = require('../model/specification.model');
 
 
 exports.getSpecification = async function (req, res) {
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const page = parseInt(req.query.page, 10) || 1;
+    const searchTerm = req.query.search || '';
     try {
-        await SpecificationModel.getSpecification()
-            .then((specification) => res.json(specification))
-            .catch((error) => {
-                console.log(error)
-                res.status(500).json({ success: false, msg: "Interna Server Error" })
-            })
+        const {total, specifications} = await SpecificationModel.getSpecification(limit,
+            (page - 1) * limit,
+            searchTerm)
+
+        res.json({ total, specifications });
     } catch (error) {
         console.error("Error creating ratings:", error);
         res.status(500).json({ message: "Internal Server Error" });

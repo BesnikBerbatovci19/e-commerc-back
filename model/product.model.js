@@ -17,7 +17,6 @@ function getAllProduct() {
     });
   });
 }
-
 function getProductById(id) {
   const query = `
         SELECT 
@@ -1222,7 +1221,53 @@ function getSingelProduct(slug) {
     });
   });
 }
+function getProductsWithSpecification(limit, offset = 0, searchTerm = '') {
+  const searchCondition = searchTerm ? `WHERE p.name LIKE ?` : '';
+  const queryParams = searchTerm ? [`%${searchTerm}%`] : [];
 
+  const countQuery = `
+    SELECT COUNT(*) AS total
+    FROM product 
+  `;
+
+  const fetchQuery = `
+    SELECT 
+      p.id, p.name, p.description, p.price, p.inStock, p.barcode, 
+      p.SKU, p.status, p.is_deal_of_week, p.created_at
+    FROM 
+      product p
+    LEFT JOIN 
+      product_specification ps ON p.id = ps.product_id
+    ${searchCondition}
+    GROUP BY 
+      p.id
+    ORDER BY 
+      p.inStock DESC, p.id DESC
+    LIMIT ? OFFSET ?;
+  `;
+  const fetchQueryParams = [...queryParams, limit, offset];
+
+  return new Promise((resolve, reject) => {
+    connection.query(countQuery, queryParams, (countError, countResults) => {
+      if (countError) {
+        return reject(countError);
+      }
+      
+      const total = countResults[0].total;
+
+      connection.query(fetchQuery, fetchQueryParams, (fetchError, fetchResults) => {
+        if (fetchError) {
+          return reject(fetchError);
+        }
+
+        resolve({
+          total,
+          products: fetchResults,
+        });
+      });
+    });
+  });
+}
 function getProductWithSpecification(limit) {
   const query = `
     SELECT 
@@ -1469,5 +1514,6 @@ module.exports = {
   searchProductLive,
   searchProductLives,
   createProductMeteron,
-  getAllByCategory
+  getAllByCategory,
+  getProductsWithSpecification
 };

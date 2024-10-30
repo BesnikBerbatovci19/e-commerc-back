@@ -18,13 +18,15 @@ exports.createDiscount = async function (req, res) {
 }
 
 exports.getAllDiscount = async function (req, res) {
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const page = parseInt(req.query.page, 10) || 1;
+    const searchTerm = req.query.search || '';
     try {
-        DiscountModel.getAllDiscount()
-            .then((discounts) => res.json(discounts))
-            .catch((error) => {
-                console.error("Error get discounts:", error)
-                res.status(500).json({ message: "Error  get discounts" })
-            })
+        const {total, cupons} = await DiscountModel.getAllDiscount(limit,
+            (page - 1) * limit,
+            searchTerm)
+    
+        res.json({ total, cupons });
     } catch (error) {
         console.log(error)
         res.status(500).json({ message: 'Server error.' });
