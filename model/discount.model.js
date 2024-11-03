@@ -55,10 +55,14 @@ function findDiscount(code) {
     });
 }
 
-function createDiscount({ code, amount, valid_from, valid_until, category_id, product_id = null }) {
-    const query = "INSERT INTO discounts (code, amount, valid_from, valid_until, category_id, product_id) VALUES (?, ?, ?, ?, ?, ?)";
+function createDiscount({ code, amount, valid_from, valid_until, categories, products, subcategories, itemsubcategories }) {
+    const query = `
+        INSERT INTO discounts (code, amount, valid_from, valid_until, categories, products, subcategories, itemsubcategories)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    
     return new Promise((resolve, reject) => {
-        connection.query(query, [code, amount, valid_from, valid_until, category_id, product_id], (error, results) => {
+        connection.query(query, [code, amount, valid_from, valid_until, categories, products, subcategories, itemsubcategories], (error, results) => {
             if (error) {
                 reject(error);
             } else {
@@ -84,7 +88,6 @@ function deleteDiscount(id) {
 
 }
 function discountedProducts(code, products) {
-    
     const query = "SELECT * FROM discounts WHERE code = ? AND NOW() BETWEEN valid_from AND valid_until";
 
     return new Promise((resolve, reject) => {
@@ -94,32 +97,56 @@ function discountedProducts(code, products) {
             }
 
             if (results.length === 0) {
-                
-                return resolve([]); 
+                return resolve([]);
             }
 
-            const discount = results[0]; 
+            const discount = results[0];
+        
+            const discountProducts = discount.products ? discount.products.map(Number) : null;
+            const discountItemSubcategories = discount.itemsubcategories ? discount.itemsubcategories.map(Number) : null;
+            const discountSubcategories = discount.subcategories ? discount.subcategories.map(Number) : null;
+            const discountCategories = discount.categories ? discount.categories.map(Number) : null;
 
-            if (discount.product_id !== null) {
-                const matchedProducts = products.filter(product => product === discount.product_id);
+            if (discountProducts && discountProducts.length > 0) {
+
+                const matchedProducts = products.filter(product => discountProducts.includes(parseInt(product)));
                 return resolve({ matchedProducts, amount: discount.amount });
-            } else {
-                const categoryQuery = "SELECT id FROM product WHERE category_id = ? AND id IN (?)";
+            } else if (discountItemSubcategories && discountItemSubcategories.length > 0) {
 
-                connection.query(categoryQuery, [discount.category_id, products], (error, categoryResults) => {
+                const itemSubcategoryQuery = "SELECT id FROM product WHERE itemsubcategory_id IN (?) AND id IN (?)";
+                connection.query(itemSubcategoryQuery, [discountItemSubcategories, products], (error, itemResults) => {
                     if (error) {
                         return reject(error);
                     }
-
-                    const matchingProductIds = categoryResults.map(result => result.id);
-                    console.log("matchingProductIds", matchingProductIds);
+                    const matchingProductIds = itemResults.map(result => result.id);
                     return resolve({ matchedProducts: matchingProductIds, amount: discount.amount });
                 });
+            } else if (discountSubcategories && discountSubcategories.length > 0 ) {
+                const subcategoryQuery = "SELECT id FROM product WHERE subcategory_id IN (?) AND id IN (?)";
+                connection.query(subcategoryQuery, [discountSubcategories, products], (error, subResults) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    const matchingProductIds = subResults.map(result => result.id);
+
+                    return resolve({ matchedProducts: matchingProductIds, amount: discount.amount });
+                });
+            } else if (discountCategories && discountCategories.length > 0) {
+               
+                const categoryQuery = "SELECT id FROM product WHERE category_id IN (?) AND id IN (?)";
+                connection.query(categoryQuery, [discountCategories, products], (error, categoryResults) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    const matchingProductIds = categoryResults.map(result => result.id);
+                    return resolve({ matchedProducts: matchingProductIds, amount: discount.amount });
+                });
+            } else {
+                return resolve([]);
             }
         });
     });
 }
-
 
 module.exports = {
     createDiscount,

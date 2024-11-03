@@ -1,21 +1,31 @@
 const DiscountModel = require('../model/discount.model');
 
 exports.createDiscount = async function (req, res) {
-    const { code, amount, valid_from, valid_until, category_id, product_id  } = req.body;
- 
+    const { code, amount, valid_from, valid_until, categories, products, subcategories, itemsubcategories } = req.body;
+
     try {
         const existDiscountCode = await DiscountModel.findDiscount(code);
         if (existDiscountCode.length > 0) {
-            res.status(404).json({ message: "Kuponi egziton, ju lutem prvoni nje kodë tjetër" });
+            res.status(404).json({ message: "Kuponi ekziston, ju lutem provoni një kod tjetër" });
         } else {
-            const discountId = await DiscountModel.createDiscount({ code, amount, valid_from, valid_until,category_id,  product_id: product_id || null });
+
+            const discountId = await DiscountModel.createDiscount({
+                code,
+                amount,
+                valid_from,
+            valid_until,
+                categories: JSON.stringify(categories || []),
+                products: JSON.stringify(products || []),
+                subcategories: JSON.stringify(subcategories || []),
+                itemsubcategories: JSON.stringify(itemsubcategories || [])
+            });
             res.json({ id: discountId });
         }
     } catch (error) {
-        console.log(error)
+        console.log(error);
         res.status(500).json({ message: 'Server error.' });
     }
-}
+};
 
 exports.getAllDiscount = async function (req, res) {
     const limit = parseInt(req.query.limit, 10) || 10;
@@ -53,9 +63,8 @@ exports.deleteDiscount = async function (req, res) {
     }
 }
 exports.discountedProducts = async function (req, res) {
-    const { code } = req.body;
-    const products = req.body['products[]'];
-
+    const { code, products } = req.body;
+    console.log("products",products)
 
     try {
         const { matchedProducts, amount } = await DiscountModel.discountedProducts(code, products);
