@@ -25,7 +25,7 @@ const discountRoute = require('./route/discount');
 const subscribeRoute = require("./route/subscribe");
 
 // middleware
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cors());
 
