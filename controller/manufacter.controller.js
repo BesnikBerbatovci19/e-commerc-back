@@ -1,6 +1,7 @@
 const ManufacterModel = require("../model/manufacter.model");
 
 exports.getManufacterName = async function (req, res) {
+<<<<<<< HEAD
   const limit = parseInt(req.query.limit, 10) || 10;
   const page = parseInt(req.query.page, 10) || 1;
   const searchTerm = req.query.search || "";
@@ -10,6 +11,19 @@ exports.getManufacterName = async function (req, res) {
       (page - 1) * limit,
       searchTerm
     );
+=======
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const page = parseInt(req.query.page, 10) || 1;
+    const searchTerm = req.query.search || '';
+    const all = req.query.all === 'true';
+    try {
+        const {total, manufacters} = await ManufacterModel.getManufacterName(
+            limit,
+            (page - 1) * limit,
+            searchTerm,
+            all
+        )
+>>>>>>> 73dc5e0c080f9c104ae76379ccc381b4fac731d9
 
     res.json({ total, manufacters });
   } catch (error) {

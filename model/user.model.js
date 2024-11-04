@@ -1,7 +1,7 @@
 const connection = require("../config/database");
 const bcrypt = require("bcrypt");
 
-function getAllUser(limit, offset = 0, searchTerm = "") {
+function getAllUser(limit, offset = 0, searchTerm = "", all = false) {
   const searchCondition = searchTerm
     ? `WHERE name LIKE ? OR surname LIKE ?`
     : "";
@@ -18,9 +18,9 @@ function getAllUser(limit, offset = 0, searchTerm = "") {
         FROM user
         ${searchCondition}
         ORDER BY id DESC
-        LIMIT ? OFFSET ?;
+        ${all ? "" : "LIMIT ? OFFSET ?"};
     `;
-  const fetchQueryParams = [...queryParams, limit, offset];
+  const fetchQueryParams = all ? queryParams : [...queryParams, limit, offset];
 
   return new Promise((resolve, reject) => {
     connection.query(countQuery, queryParams, (countError, countResults) => {
