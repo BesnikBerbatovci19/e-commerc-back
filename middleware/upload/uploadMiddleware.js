@@ -45,16 +45,17 @@ const uploadMiddleware = (req, res, next) => {
           fs.mkdirSync(thumbDir, { recursive: true });
         }
 
-        // Use the same filename for both main and thumbnail, placed in their respective directories
-        const fileName = path.basename(file.filename);
-
         // Set file paths for main and thumbnail images
+        const fileName = path.basename(file.filename);
         const thumbFilePath = path.join(thumbDir, fileName);
         const mainFilePath = path.join(mainDir, fileName);
 
         try {
-          // Generate thumbnail (250x250)
-          const thumbImage = sharp(file.path).resize(170, 170, {
+          // Save the uploaded file directly to the main directory
+          fs.renameSync(file.path, mainFilePath);
+
+          // Generate thumbnail (170x170)
+          const thumbImage = sharp(mainFilePath).resize(170, 170, {
             fit: sharp.fit.cover,
             background: { r: 255, g: 255, b: 255, alpha: 1 },
           });
@@ -66,30 +67,17 @@ const uploadMiddleware = (req, res, next) => {
           }
 
           await thumbImage.toFile(thumbFilePath);
-
-          // Generate main photo (600x600)
-          const mainImage = sharp(file.path).resize(400, 400, {
-            fit: sharp.fit.cover,
-            background: { r: 255, g: 255, b: 255, alpha: 1 },
-          });
-
-          if (file.mimetype === "image/jpeg") {
-            mainImage.jpeg({ quality: 90 });
-          } else if (file.mimetype === "image/png") {
-            mainImage.png({ compressionLevel: 6 });
-          }
-
-          await mainImage.toFile(mainFilePath);
         } catch (resizeError) {
           errors.push(`Failed to process image: ${file.originalname}`);
         }
       }
 
-      // If there are errors, delete the uploaded files
+      // If there are errors, delete the uploaded files in main directory
       if (errors.length > 0) {
         files.forEach((file) => {
-          if (fs.existsSync(file.path)) {
-            fs.unlinkSync(file.path);
+          const mainFilePath = path.join(mainDir, file.filename);
+          if (fs.existsSync(mainFilePath)) {
+            fs.unlinkSync(mainFilePath);
           }
         });
         return res.status(400).json({ errors });

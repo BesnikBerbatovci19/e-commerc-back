@@ -5,6 +5,7 @@ const path = require("path");
 const sharp = require("sharp");
 const { v4: uuidv4 } = require("uuid");
 const { generateSlugSubCategoryByName } = require("../utils/generateSlug");
+const { DefaultDeserializer } = require("v8");
 function getAllProduct() {
   const query = "SELECT * FROM product ORDER BY id DESC";
   return new Promise((resolve, reject) => {
@@ -319,21 +320,21 @@ function getProductUser(userId) {
 
 async function createProductMeteron(data) {
   const query =
-    "INSERT INTO product(category_id, category_slug, subcategory_id, subcategory_slug, itemsubcategory_id, itemsubcategory_slug, slug, name, description, price, status, inStock, path, discount, barcode, SKU) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    "INSERT INTO product(category_id, category_slug, subcategory_id, subcategory_slug, itemsubcategory_id, itemsubcategory_slug, slug, name, description, price, status, inStock, path, discount, barcode, SKU, manufacter_id, purchase_price) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
   const checkProductQuery =
     "SELECT COUNT(*) AS count FROM product WHERE barcode = ? AND category_id = ? AND subcategory_id = ? AND itemsubcategory_id = ?";
 
   const categoryMap = {
-    Orë: {
+    Tastiere: {
       category_id: 10,
       category_slug: "teknologji",
-      subcategory_id: 108,
-      subcategory_slug: "smart",
-      itemsubcategory_id: 115,
-      itemsubcategory_slug: "or-mats-aktiviteti",
+      subcategory_id: 109,
+      subcategory_slug: "aksesor",
+      itemsubcategory_id: 135,
+      itemsubcategory_slug: "tastier",
     },
-    Maus: {
+    MOUSE: {
       category_id: 10,
       category_slug: "teknologji",
       subcategory_id: 109,
@@ -349,13 +350,45 @@ async function createProductMeteron(data) {
       itemsubcategory_id: 136,
       itemsubcategory_slug: "kufje-mikrofon",
     },
-    Tastierë: {
+    Mikrofon: {
       category_id: 10,
       category_slug: "teknologji",
       subcategory_id: 109,
       subcategory_slug: "aksesor",
-      itemsubcategory_id: 135,
-      itemsubcategory_slug: "tastier",
+      itemsubcategory_id: 136,
+      itemsubcategory_slug: "kufje-mikrofon",
+    },
+    Altoparlantë: {
+      category_id: 10,
+      category_slug: "teknologji",
+      subcategory_id: 109,
+      subcategory_slug: "aksesor",
+      itemsubcategory_id: 143,
+      itemsubcategory_slug: "Altoparlant",
+    },
+    Karrige: {
+      category_id: 10,
+      category_slug: "teknologji",
+      subcategory_id: 106,
+      subcategory_slug: "gaming",
+      itemsubcategory_id: 144,
+      itemsubcategory_slug: "karrige-tavolina",
+    },
+    TAVOLIN: {
+      category_id: 10,
+      category_slug: "teknologji",
+      subcategory_id: 106,
+      subcategory_slug: "gaming",
+      itemsubcategory_id: 144,
+      itemsubcategory_slug: "karrige-tavolina",
+    },
+    ÇANTË: {
+      category_id: 10,
+      category_slug: "teknologji",
+      subcategory_id: 109,
+      subcategory_slug: "aksesor",
+      itemsubcategory_id: 149,
+      itemsubcategory_slug: "çantë-për-laptop",
     },
   };
 
@@ -368,9 +401,112 @@ async function createProductMeteron(data) {
   let itemsubcategory_id = null;
   let itemsubcategory_slug = null;
 
-  if (data.Name) {
-    const categories = data.Name.split(" ").map((item) => item.trim());
+  if (data.Emertimi) {
+    const categories = data.Emertimi.split(" ").map((item) => item.trim());
 
+    for (let category of categories) {
+      if (categoryMap[category]) {
+        category_id = categoryMap[category].category_id;
+        category_slug = categoryMap[category].category_slug;
+        subcategory_id = categoryMap[category].subcategory_id;
+        subcategory_slug = categoryMap[category].subcategory_slug;
+        itemsubcategory_id = categoryMap[category].itemsubcategory_id;
+        itemsubcategory_slug = categoryMap[category].itemsubcategory_slug;
+
+        const productExists = await new Promise((resolve, reject) => {
+          connection.query(
+            checkProductQuery,
+            [data.Barcode, category_id, subcategory_id, itemsubcategory_id],
+            (error, results) => {
+              if (error) {
+                reject(error);
+              } else {
+                resolve(results[0].count > 0);
+              }
+            }
+          );
+        });
+        if (productExists) {
+          return null;
+        }
+
+        const slug = generateSlugSubCategoryByName(data.Emertimi);
+        await new Promise((resolve, reject) => {
+          // const path = paths ? [{ id: uuidv4(), path: data.Gtin }] : null;
+          connection.query(
+            query,
+            [
+              category_id,
+              category_slug,
+              subcategory_id,
+              subcategory_slug,
+              itemsubcategory_id,
+              itemsubcategory_slug,
+              slug,
+              data.Emertimi,
+              JSON.stringify(data.Pershkrimi),
+              data["Qmimi RETAIL"],
+              1,
+              10,
+              null,
+              null,
+              data.Barcode,
+              data.Barcode,
+              559,
+              data["Qmimi meTVSH"],
+            ],
+            (error, results) => {
+              if (error) {
+                reject(error);
+              } else {
+                resolve(results.insertId);
+              }
+            }
+          );
+        });
+        break;
+      }
+    }
+  }
+}
+
+async function createProductPretty(data) {
+  const query =
+    "INSERT INTO product(user_id, category_id, category_slug, subcategory_id, subcategory_slug, itemsubcategory_id, itemsubcategory_slug, slug, name, description, price, status, inStock, path, discount, barcode, SKU) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+  const checkProductQuery =
+    "SELECT COUNT(*) AS count FROM product WHERE barcode = ? AND category_id = ? AND subcategory_id = ? AND itemsubcategory_id = ?";
+
+  const categoryMap = {
+    Floke: {
+      category_id: 11,
+      category_slug: "kozmetikë",
+      subcategory_id: 62,
+      subcategory_slug: "kujdesi-pr-flok",
+      itemsubcategory_id: 21,
+      itemsubcategory_slug: "mirmbajtje-t-flokve",
+    },
+    fetyre: {
+      category_id: 11,
+      category_slug: "kozmetikë",
+      subcategory_id: 61,
+      subcategory_slug: "kujdesi-pr-lekur",
+      itemsubcategory_id: 97,
+      itemsubcategory_slug: "kujdesi-personal",
+    },
+  };
+
+  const itemSubcategoryMap = {};
+
+  let category_slug = null;
+  let category_id = null;
+  let subcategory_id = null;
+  let subcategory_slug = null;
+  let itemsubcategory_id = null;
+  let itemsubcategory_slug = null;
+
+  if (data.Emertimi) {
+    const categories = data.Kategoria.split(" ").map((item) => item.trim());
     for (let category of categories) {
       if (categoryMap[category]) {
         category_id = categoryMap[category].category_id;
@@ -382,7 +518,7 @@ async function createProductMeteron(data) {
         const productExists = await new Promise((resolve, reject) => {
           connection.query(
             checkProductQuery,
-            [data.Gtin, category_id, subcategory_id, itemsubcategory_id],
+            [data.Barcode, category_id, subcategory_id, itemsubcategory_id],
             (error, results) => {
               if (error) {
                 reject(error);
@@ -392,71 +528,57 @@ async function createProductMeteron(data) {
             }
           );
         });
-
+        console.log(productExists);
         if (productExists) {
           return null;
         }
-
-        const slug = generateSlugSubCategoryByName(data.Name);
-
-        let price = Math.round(data.Price);
-        let oldPrice = Math.round(data.OldPrice);
-        let discount = null;
-        if (oldPrice < price) {
-          oldPrice = data.Price;
-          discount = null;
-        } else if (price === oldPrice) {
-          oldPrice = data.Price;
-          discount = null;
-        } else if (oldPrice > price) {
-          oldPrice = data.OldPrice;
-          discount = data.Price;
-        }
         const paths = await downloadAndResizeImage(
-          data.Gtin,
-          "uploads/prodcut",
-          data.Gtin
+          data.Barcode,
+          "uploads/product",
+          data.Barcode
         );
-        // Insert product
-        if (oldPrice) {
-          await new Promise((resolve, reject) => {
-            const path = paths ? [{ id: uuidv4(), path: data.Gtin }] : null;
-            connection.query(
-              query,
-              [
-                category_id,
-                category_slug,
-                subcategory_id,
-                subcategory_slug,
-                itemsubcategory_id,
-                itemsubcategory_slug,
-                slug,
-                data.Name,
-                JSON.stringify(data.ShortDescription),
-                oldPrice,
-                1,
-                10,
-                JSON.stringify(path),
-                discount,
-                data.Gtin,
-                data.SKU,
-              ],
-              (error, results) => {
-                if (error) {
-                  reject(error);
-                } else {
-                  resolve(results.insertId);
-                }
+        const slug = generateSlugSubCategoryByName(data.Emertimi);
+
+        await new Promise((resolve, reject) => {
+          const path = paths
+            ? [{ id: uuidv4(), path: paths.newFileName }]
+            : null;
+          connection.query(
+            query,
+            [
+              17,
+              category_id,
+              category_slug,
+              subcategory_id,
+              subcategory_slug,
+              itemsubcategory_id,
+              itemsubcategory_slug,
+              slug,
+              data.Emertimi,
+              JSON.stringify(data["Pershkrimi i plote"]),
+              data.Cmimi,
+              1,
+              10,
+              JSON.stringify(path),
+              null,
+              data.Barcode,
+              data.Barcode,
+            ],
+            (error, results) => {
+              if (error) {
+                reject(error);
+              } else {
+                resolve(results.insertId);
               }
-            );
-          });
-        }
-        // Exit loop after successful insert
+            }
+          );
+        });
         break;
       }
     }
   }
 }
+
 async function createProductByCsv(data) {
   const query =
     "INSERT INTO product(category_id, category_slug, subcategory_id, subcategory_slug, itemsubcategory_id, itemsubcategory_slug, slug, name, description, price, status, inStock, path, discount, barcode, SKU) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -710,7 +832,7 @@ const findPhotoByName = (directory, baseName) => {
 const downloadAndResizeImage = async (fileName, outputDir, gtin) => {
   try {
     const ecomBackPath = path.resolve(__dirname, "..");
-    const fototPath = path.join(ecomBackPath, "Fotot");
+    const fototPath = path.join(ecomBackPath, "PrettyFoto");
 
     const photoPath = findPhotoByName(fototPath, fileName);
 
@@ -764,6 +886,7 @@ const downloadAndResizeImage = async (fileName, outputDir, gtin) => {
     return null;
   }
 };
+
 function getAllByCategory(slug) {
   const baseQuery = `FROM product WHERE category_slug = ?`;
   const queryParams = [slug];
@@ -839,29 +962,28 @@ function searchDiscountQuery(data) {
   const fetchQueryParams = [...queryParams, limit, offset];
 
   return new Promise((resolve, reject) => {
-        connection.query(countQuery, queryParams, (countError, countResults) => {
-          if (countError) {
-            return reject(countError);
-          }
-     
-          connection.query(
-            fetchQuery,
-            fetchQueryParams,
-            (fetchError, fetchResults) => {
-              if (fetchError) {
-                return reject(fetchError);
-              }
-              console.log('fetchResults',fetchResults)
+    connection.query(countQuery, queryParams, (countError, countResults) => {
+      if (countError) {
+        return reject(countError);
+      }
 
-              resolve({
-                totalasdasdas: countResults[0].total,
-                prodasdasducts: fetchResults,
-              });
-            }
-          );
-        });
-      });
-    }
+      connection.query(
+        fetchQuery,
+        fetchQueryParams,
+        (fetchError, fetchResults) => {
+          if (fetchError) {
+            return reject(fetchError);
+          }
+
+          resolve({
+            totalasdasdas: countResults[0].total,
+            prodasdasducts: fetchResults,
+          });
+        }
+      );
+    });
+  });
+}
 
 function searchByCategory(slug, data) {
   let baseQuery = `FROM product WHERE category_slug = ?`;
@@ -1221,8 +1343,8 @@ function getSingelProduct(slug) {
     });
   });
 }
-function getProductsWithSpecification(limit, offset = 0, searchTerm = '') {
-  const searchCondition = searchTerm ? `WHERE p.name LIKE ?` : '';
+function getProductsWithSpecification(limit, offset = 0, searchTerm = "") {
+  const searchCondition = searchTerm ? `WHERE p.name LIKE ?` : "";
   const queryParams = searchTerm ? [`%${searchTerm}%`] : [];
 
   const countQuery = `
@@ -1252,22 +1374,27 @@ function getProductsWithSpecification(limit, offset = 0, searchTerm = '') {
       if (countError) {
         return reject(countError);
       }
-      
+
       const total = countResults[0].total;
 
-      connection.query(fetchQuery, fetchQueryParams, (fetchError, fetchResults) => {
-        if (fetchError) {
-          return reject(fetchError);
-        }
+      connection.query(
+        fetchQuery,
+        fetchQueryParams,
+        (fetchError, fetchResults) => {
+          if (fetchError) {
+            return reject(fetchError);
+          }
 
-        resolve({
-          total,
-          products: fetchResults,
-        });
-      });
+          resolve({
+            total,
+            products: fetchResults,
+          });
+        }
+      );
     });
   });
 }
+
 function getProductWithSpecification(limit) {
   const query = `
     SELECT 
@@ -1297,12 +1424,10 @@ function getProductWithSpecification(limit) {
         product_specification ps ON p.id = ps.product_id
     LEFT JOIN 
         specification s ON ps.specification_id = s.id
-    GROUP BY 
-        p.id
     ORDER BY 
-        p.inStock DESC, p.id DESC
-    LIMIT ?;
-`;
+        RAND()  
+    LIMIT ?;  
+  `;
 
   return new Promise((resolve, reject) => {
     connection.query(query, [limit], (error, results) => {
@@ -1515,5 +1640,6 @@ module.exports = {
   searchProductLives,
   createProductMeteron,
   getAllByCategory,
-  getProductsWithSpecification
+  getProductsWithSpecification,
+  createProductPretty,
 };

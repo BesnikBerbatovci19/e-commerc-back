@@ -9,7 +9,7 @@ const path = require("path");
 exports.getProduct = async function (req, res) {
   const limit = parseInt(req.query.limit, 10) || 10;
   const page = parseInt(req.query.page, 10) || 1;
-  const searchTerm = req.query.search || '';
+  const searchTerm = req.query.search || "";
 
   try {
     const { total, products } = await ProductModel.getProductsWithSpecification(
@@ -182,16 +182,18 @@ exports.getProductUser = async function (req, res) {
 exports.getProductByCSV = async function (req, res) {
   try {
     // const workbook = xlsx.readFile("./file/meteron.xlsx");
-    const workbook = xlsx.readFile("./file/product1.xlsx");
+    // const workbook = xlsx.readFile("./metron/WhiteShark.xlsx");
+    // const workbook = xlsx.readFile("./Pretty/Lista e Produkteve.xlsx");
+    const workbook = xlsx.readFile("./metron/Swissten.xlsx");
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
 
     const data = xlsx.utils.sheet_to_json(sheet);
 
-    // Use Promise.all or a for...of loop for proper async handling
     for (const row of data) {
-      // await ProductModel.createProductMeteron(row);
-      await ProductModel.createProductByCsv(row);
+      await ProductModel.createProductMeteron(row);
+      // await ProductModel.createProductByCsv(row);
+      // await ProductModel.createProductPretty(row);
     }
 
     return res.json("Processing complete");
@@ -350,9 +352,11 @@ exports.getDiscountProcut = async function (req, res) {
   try {
     const queryParams = req.query;
     try {
-      const { total, products } = await ProductModel.searchDiscountQuery(queryParams);
+      const { total, products } = await ProductModel.searchDiscountQuery(
+        queryParams
+      );
       res.json({ total, products });
-      } catch (error) {
+    } catch (error) {
       res.status(500).json({ error: error.message });
     }
   } catch (error) {

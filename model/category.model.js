@@ -1,114 +1,113 @@
-const connection = require('../config/database');
+const connection = require("../config/database");
 
+function getAllCategory(limit, offset = 0, searchTerm = "", all = false) {
+  const searchCondition = searchTerm ? `WHERE name LIKE ?` : "";
+  const queryParams = searchTerm ? [`%${searchTerm}%`] : [];
 
-function getAllCategory(limit, offset = 0, searchTerm = '', all = false) {
-    const searchCondition = searchTerm ? `WHERE name LIKE ?` : '';
-    const queryParams = searchTerm ? [`%${searchTerm}%`] : [];
-
-    const countQuery = `
+  const countQuery = `
         SELECT COUNT(*) AS total
         FROM category
         ${searchCondition}
     `;
 
-    const fetchQuery = `
+  const fetchQuery = `
         SELECT * 
         FROM category
         ${searchCondition}
         ORDER BY id DESC
-        ${all ? '' : 'LIMIT ? OFFSET ?'}
+        ${all ? "" : "LIMIT ? OFFSET ?"}
     `;
 
-    const fetchQueryParams = all ? queryParams : [...queryParams, limit, offset];
+  const fetchQueryParams = all ? queryParams : [...queryParams, limit, offset];
 
-    return new Promise((resolve, reject) => {
-        connection.query(countQuery, queryParams, (countError, countResults) => {
-            if (countError) {
-                return reject(countError);
-            }
-            const total = countResults[0].total;
+  return new Promise((resolve, reject) => {
+    connection.query(countQuery, queryParams, (countError, countResults) => {
+      if (countError) {
+        return reject(countError);
+      }
+      const total = countResults[0].total;
 
-            connection.query(fetchQuery, fetchQueryParams, (fetchError, fetchResults) => {
-                if (fetchError) {
-                    return reject(fetchError);
-                }
+      connection.query(
+        fetchQuery,
+        fetchQueryParams,
+        (fetchError, fetchResults) => {
+          if (fetchError) {
+            return reject(fetchError);
+          }
 
-                resolve({
-                    total,
-                    categories: fetchResults,
-                });
-            });
-        });
+          resolve({
+            total,
+            categories: fetchResults,
+          });
+        }
+      );
     });
+  });
 }
 
-
 function getCategoryById(id) {
-    const query = 'SELECT * FROM category WHERE id = ?';
+  const query = "SELECT * FROM category WHERE id = ?";
 
-    return new Promise((resolve, reject) => {
-        connection.query(query, [id], (error, results) => {
-            if (error) {
-                reject(error);
-            } else {
-                resolve(results[0])
-            }
-        })
-    })
+  return new Promise((resolve, reject) => {
+    connection.query(query, [id], (error, results) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(results[0]);
+      }
+    });
+  });
 }
 
 function crateCategory(name, description) {
-    const query = 'INSERT INTO category(name, description) VALUES (?, ?)';
+  const query = "INSERT INTO category(name, description) VALUES (?, ?)";
 
-    return new Promise((resolve, reject) => {
-        connection.query(query, [name, description], (error, results) => {
-            if (error) {
-                reject(error);
-            } else {
-                resolve(results[0])
-            }
-        })
-    })
+  return new Promise((resolve, reject) => {
+    connection.query(query, [name, description], (error, results) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(results[0]);
+      }
+    });
+  });
 }
 
 function updateCategory(name, description, id) {
-    const query = `
+  const query = `
     UPDATE category 
     SET 
         name = COALESCE(?, name),
         description = COALESCE(?, description)
     WHERE id = ?;`;
 
-    return new Promise((resolve, reject) => {
-        connection.query(query, [name, description, id], (error, results) => {
-            if (error) {
-                reject(error);
-            } else {
-                resolve(results);
-            }
-        });
+  return new Promise((resolve, reject) => {
+    connection.query(query, [name, description, id], (error, results) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(results);
+      }
     });
+  });
 }
-
-
 
 function deleteCategory(id) {
-    const query = "DELETE FROM category WHERE id = ?";
+  const query = "DELETE FROM category WHERE id = ?";
 
-    return new Promise((resolve, reject) => {
-        connection.query(query, [id], (error, results) => {
-            if (error) {
-                reject(error);
-            } else { 
-                resolve(results.affectedRows > 0);
-            }
-        });
+  return new Promise((resolve, reject) => {
+    connection.query(query, [id], (error, results) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(results.affectedRows > 0);
+      }
     });
+  });
 }
 
-
 function getCategoryWithSubCategory() {
-    const query = `
+  const query = `
 
     SELECT 
     JSON_ARRAYAGG(
@@ -152,24 +151,23 @@ function getCategoryWithSubCategory() {
 FROM 
     category c;
 
-    `
+    `;
 
-
-    return new Promise((resolve, reject) => {
-        connection.query(query, (error, results) => {
-            if (error) {
-                reject(error);
-            } else { 
-                resolve(results);
-            }
-        });
+  return new Promise((resolve, reject) => {
+    connection.query(query, (error, results) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(results);
+      }
     });
+  });
 }
 module.exports = {
-    getAllCategory,
-    getCategoryById,
-    crateCategory,
-    updateCategory,
-    deleteCategory,
-    getCategoryWithSubCategory
-}
+  getAllCategory,
+  getCategoryById,
+  crateCategory,
+  updateCategory,
+  deleteCategory,
+  getCategoryWithSubCategory,
+};
